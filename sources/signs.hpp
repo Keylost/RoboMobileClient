@@ -3,14 +3,6 @@
 
 using namespace cv;
 
-
-enum speeds
-{
-	speed_crosswalk = 250,
-	speed_stop      = 0,
-	speed_redlight  = 0
-};
-
 enum signs
 {
 	sign_none          = 0,
@@ -38,4 +30,5 @@ struct line_data
 	int32_t robot_center = 323; //point on image
 	int32_t center_of_line = 323; //center of black line
 	bool on_line = true;
+	bool stop_line = false;
 };

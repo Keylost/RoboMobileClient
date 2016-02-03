@@ -3,58 +3,109 @@
 #include <string.h>
 #include <stdint.h>
 #include <opencv2/opencv.hpp>
-
-#ifdef __linux__
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <unistd.h>
-
-#else
-#ifdef _MSC_VER
-#define snprintf _snprintf_s 
-#endif
-#include <windows.h>
-#pragma comment(lib, "Ws2_32.lib")
-#endif
 #include <ctime>
 #include "videomaker.hpp"
 #include "telemetry.hpp"
 #include "signs.hpp"
 #include "config.hpp"
 #include "CLP.hpp"
+#include "client.hpp"
+#include <string>
+
+#ifdef _MSC_VER
+#define snprintf _snprintf_s 
+#endif
 
 using namespace std;
 using namespace cv;
 
-
 Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
 Mat window;
 
-int sockfd;
+System syst;
 int bordersize =100;
-
-bool send_data(void *src,int socket,size_t size)
-{
-	int bytes = 0;
-	size_t i = 0;
-
-	for (i = 0; i < size; i += bytes) 
-	{
-		if ((bytes = send(socket, ((char *)src)+i, size-i, 0)) == -1)
-		{
-			return false;
-		}
-	}
-	return true;
-}
+char screenshot_name[16];
+VideoMaker video;
+Mat img;
+Telemetry tel_data;
+int power_val = 1;
+Client *client;
+uint32_t imgsize = 0;
+uint16_t width=0; //Resolution
+uint16_t height=0;
+vector<uchar> b; //vector for image
 
 void error(const char* message); //error function
+void show_telemetry(Mat &image,Telemetry &tel_data);
+void Power_switcher(int pos, void *ptr);
+void init();
+void deinit();
+
+int main(int argc, char *argv[])
+{
+	CLP::parse(argc, argv, syst);
+	init();
+	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
+	//printf("Server:  %s:%d \n",syst.host, syst.portno);
+	//printf("Press u to take screenshot\n");
+		
+	while(true)
+	{
+		if(!client->get_data(&tel_data,sizeof(Telemetry)))
+		{
+			error("Getting data error");
+		}
+		client->get_data(&imgsize, 4);
+		
+		b = vector<uchar>(imgsize);
+		client->get_data(&b[0], imgsize);
+		img = imdecode(b,1);
+		show_telemetry(img,tel_data);
+
+		if(syst.videomaker) video.write(window);
+		imshow("Stream", window);
+		
+		int c = waitKey(1);
+		if(c==27) break;
+		else if(c==117) //take screenshot u
+		{
+			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", time(NULL));
+			if(imwrite(screenshot_name, img))
+			{
+				printf("[I]: screenshot %s saved\n", screenshot_name);
+			}
+			else
+			{
+				printf("[I]: screenshot cant't be saved. No access/No codecs\n");
+			}
+		}
+		b.clear();	
+	}
+
+	deinit();
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void show_telemetry(Mat &image,Telemetry &tel_data)
 {
+	//printf("%d %d %d\n",tel_data.speed,tel_data.direction,tel_data.angle);
 	//create window//
 	Mat wroi = window(Rect(Point(0,0),Point(640,480)));
 	Mat panel = window(Rect(Point(640,0),Point(740,480)));
@@ -68,7 +119,6 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 	
 	rectangle(image,Point(image.cols/2,0), Point(image.cols-1,image.rows/2),Scalar(255,0,0), 2, 8);//sign area
 	Rect speed_area(Point(10,image.rows-60),Point(50,image.rows-10));
-	//rectangle(image,speed_area,Scalar(0,0,255));//speed area
 	
 	cv::Scalar color= CV_RGB(255,0,0);
 	double size =1.1;
@@ -90,9 +140,7 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 			circle(panel,Point(panel.cols/2,400),15,Scalar(0,0,250),CV_FILLED,8);
 		}
 	}
-	
-	//rectangle(frame,Point(recognize.mysign.area.x+320,recognize.mysign.area.y),Point(recognize.mysign.area.x+320+recognize.mysign.area.width,recognize.mysign.area.y+recognize.mysign.area.height),Scalar(0,255,0), 1, 8);	
-	
+		
 	Mat ROI;
 	int xindent;
 	int yindent = 10;
@@ -149,55 +197,44 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 	image.copyTo(wroi);	
 }
 
-void get_data(void *dst, int socket, size_t size)
-{
-	size_t i=0;
-	int bytes =0;
-	for (i = 0; i < size; i += bytes) {
-		if ((bytes = recv(socket, (char *)dst+i, size-i, 0)) <= 0) {
-			error("getting data error");
-		}
-	}
-}
-
 void Power_switcher(int pos, void *ptr)
 {
 	bool power=true;
 	if(pos==1) power = true;
 	else power = false;
-	send_data(&power,sockfd,1);
+	client->send_data(&power,1);
 	printf("Power changed\n");
 	return;
 }
 
-int main(int argc, char *argv[])
+void init()
 {
-#if !(defined __linux__)
-	WSADATA WsaData;
-	int err = WSAStartup(0x0101, &WsaData);
-	if (err == SOCKET_ERROR)
+	client = new Client(syst);
+	
+	if(!client->connect())
 	{
-		printf("WSAStartup() failed: %ld\n", GetLastError());
-		exit(0);
+			
+		error("Can't connect to server.");
 	}
-#endif
-
-	uint32_t imgsize = 0;
-	char screenshot_name[16];
-	namedWindow("Stream", WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //window for image
-	VideoMaker video;
-	Mat img;
-	Telemetry tel_data;
-	int power_val = 1;
-	createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
-	struct sockaddr_in serv_addr;
-	struct hostent *server;
-	std::vector<uchar> b; //vector for image
-	uint16_t width=0;
-	uint16_t height=0;
-	System syst;
-	CLP::parse(argc, argv, syst);
-
+	
+	client->get_data(&width, 2);
+	client->get_data(&height, 2);
+	
+	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255)); //init main window
+	namedWindow("Stream", WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //create main window
+	
+	crosswalk = imread("../img/crosswalk.jpeg",1);
+	stop = imread("../img/stop.jpeg",1);
+	green_light = imread("../img/green_light_s.jpg",1);
+	red_light = imread("../img/red_light_s.jpg",1);
+	yellow_light = imread("../img/yellow_light_s.jpg",1);
+	no_line = imread("../img/no_line.png",1);
+	
+	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
+	{
+		error("Can't load client data.\n");
+	}
+	
 	if(syst.videomaker)
 	{
 		if(video.init(syst))
@@ -210,88 +247,29 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	crosswalk = imread("../img/crosswalk.jpeg",1);
-	stop = imread("../img/stop.jpeg",1);
-	green_light = imread("../img/green_light_s.jpg",1);
-	red_light = imread("../img/red_light_s.jpg",1);
-	yellow_light = imread("../img/yellow_light_s.jpg",1);
-	no_line = imread("../img/no_line.png",1);
-	
-	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
-	{
-		printf("Can't load client data.\n");
-		exit(10);
-	}
+	return;
+}
 
-	printf("Server:  %s:%d \n",syst.host, syst.portno);
-	printf("Client started. Press ESC to exit\n");
-	printf("Press u to take screenshot\n");
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0)
-		error("ERROR opening socket");
-	server = gethostbyname(syst.host);
-	if (server == NULL)
-		error("ERROR, no such host");
-
-	memset((char *) &serv_addr,0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	memcpy((char *)&serv_addr.sin_addr.s_addr,
-			(char *)server->h_addr,
-			server->h_length);
-	serv_addr.sin_port = htons(syst.portno);
-	if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-	{
-		error("ERROR connecting");
-	}
-
-	get_data(&width, sockfd, 2);
-	get_data(&height, sockfd, 2);
-	printf("Resolution: %ix%i\n", (int)width, (int)height);
-	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255));
-	while(true)
-	{
-		get_data(&tel_data,sockfd,sizeof(Telemetry));		
-
-		get_data(&imgsize, sockfd, 4);
-		b = vector< uchar >(imgsize);
-		get_data(&b[0], sockfd, imgsize);
-		img = imdecode(b,1);
-		show_telemetry(img,tel_data);
-
-		if(syst.videomaker) video.write(window);
-		imshow("Stream", window);
-		int c = waitKey(1);
-		if(c==27) break;
-		else if(c==117) //take screenshot u
-		{
-			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", time(NULL));
-			if(imwrite(screenshot_name, img))
-			{
-				printf("[I]: screenshot %s saved\n", screenshot_name);
-			}
-			else
-			{
-				printf("[I]: screenshot cant't be saved. No access/No codecs\n");
-			}
-		}
-		b.clear();
-		//img.release();	
-	}
-
+void deinit()
+{
 	video.deinit();
 	destroyAllWindows();
-
-#ifdef __linux__
-	close(sockfd);
-#else
-	closesocket(sockfd);
-#endif
-	return 0;
+	client->disconnect();
 }
 
 void error(const char* message)
 {
-	printf("%s\n", message);
-	exit(1);
+	char buffer[] = "Press any key to exit";
+	Mat error_img = Mat(80,500,CV_8UC3,Scalar(255,255,255));
+	Scalar color= CV_RGB(0,0,0);
+	double size =1.0;
+	putText(error_img, string(message), Point(5, 30), FONT_HERSHEY_COMPLEX_SMALL, size, CV_RGB(200,0,0));
+	
+	putText(error_img, string(buffer), Point(5, 50), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	
+	namedWindow("Error",WINDOW_AUTOSIZE); //create error window
+	imshow("Error",error_img);
+	waitKey(0);
+	deinit();
+	exit(0);
 }
