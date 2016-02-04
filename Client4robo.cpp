@@ -20,6 +20,7 @@ using namespace std;
 using namespace cv;
 
 Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
+Mat giveway,mainroad;
 Mat window;
 
 System syst;
@@ -158,6 +159,16 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
 			stop.copyTo(ROI);
 			break;
+		case sign_mainroad:
+			xindent = (panel.cols - mainroad.cols)/2;
+			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+			mainroad.copyTo(ROI);
+			break;
+		case sign_giveway:
+			xindent = (panel.cols - giveway.cols)/2;
+			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+			giveway.copyTo(ROI);
+			break;
 		case sign_trafficlight:
 			xindent = (panel.cols - green_light.cols)/2;
 			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
@@ -229,6 +240,8 @@ void init()
 	red_light = imread("../img/red_light_s.jpg",1);
 	yellow_light = imread("../img/yellow_light_s.jpg",1);
 	no_line = imread("../img/no_line.png",1);
+	giveway = imread("../img/ustupi.jpg",1);
+	mainroad = imread("../img/glavnaya.jpg",1);
 	
 	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
 	{
