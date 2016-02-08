@@ -191,6 +191,16 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 			break;
 	}
 	
+	//EXPERIMENTAL AREA//
+	if(tel_data.mysign.sign!=sign_none)
+	{
+		int fx = width/2 + tel_data.mysign.area.x;
+		int fy = 0 + tel_data.mysign.area.y;
+		int ex = fx + tel_data.mysign.area.width;
+		int ey = fy + tel_data.mysign.area.height;
+		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 1, 18);
+	}
+	//EXPERIMENTAL AREA//
 	
 	
 	if(tel_data.myline.on_line)
