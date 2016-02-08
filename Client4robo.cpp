@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include "client.hpp"
 #include <opencv2/opencv.hpp>
 #include <ctime>
 #include "videomaker.hpp"
@@ -9,7 +10,6 @@
 #include "signs.hpp"
 #include "config.hpp"
 #include "CLP.hpp"
-#include "client.hpp"
 #include <string>
 
 #ifdef _MSC_VER

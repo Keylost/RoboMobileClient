@@ -37,14 +37,14 @@ bool Client::connect()
 	struct timeval savedtv;
 	socklen_t savedtv_size = sizeof(savedtv);
 	//save timeout                                                                            
-	getsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,&savedtv,&savedtv_size);
+	getsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,&savedtv_size);
 	//set 4 second timeout
 	tv.tv_sec=4; tv.tv_usec=0;
-	if (setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,&tv,tvsz)<0)
+	if (setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&tv,tvsz)<0)
 	{
 		perror("setsockopt ");
 	}
-	if (setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,&tv,tvsz)<0)
+	if (setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&tv,tvsz)<0)
 	{
 		perror("setsockopt ");
 	}
@@ -52,13 +52,13 @@ bool Client::connect()
 	if (::connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 	{
 		//reset timeouts                                                                             
-		setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,&savedtv,savedtv_size);
-		setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,&savedtv,savedtv_size);
+		setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
+		setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
 		return false;
 	}
 	//reset timeouts                                                                             
-	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,&savedtv,savedtv_size);
-	setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,&savedtv,savedtv_size);
+	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
+	setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
 	
 	return true;
 }
