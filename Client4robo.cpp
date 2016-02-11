@@ -192,13 +192,13 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 	}
 	
 	//EXPERIMENTAL AREA//
-	if(tel_data.mysign.sign!=sign_none)
+	if(tel_data.mysign.sign==sign_mainroad || tel_data.mysign.sign == sign_giveway)
 	{
 		int fx = width/2 + tel_data.mysign.area.x;
 		int fy = 0 + tel_data.mysign.area.y;
 		int ex = fx + tel_data.mysign.area.width;
 		int ey = fy + tel_data.mysign.area.height;
-		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 1, 18);
+		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);
 	}
 	//EXPERIMENTAL AREA//
 	
