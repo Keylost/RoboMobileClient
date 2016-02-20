@@ -22,6 +22,10 @@ using namespace cv;
 Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
 Mat giveway,mainroad;
 Mat window;
+Mat wroi; //область изображения на window
+Mat panel; //область панели информации на window
+Rect signarea;
+Rect linearea;
 
 System syst;
 int bordersize =100;
@@ -108,8 +112,6 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 {
 	//printf("%d %d %d\n",tel_data.speed,tel_data.direction,tel_data.angle);
 	//create window//
-	Mat wroi = window(Rect(Point(0,0),Point(640,480)));
-	Mat panel = window(Rect(Point(640,0),Point(740,480)));
 	
 	uint8_t *panel_row;
 	for(int i=0;i<panel.rows;i++)
@@ -125,20 +127,20 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 	double size =1.1;
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "Power");
-	putText(panel, string(buffer), Point(5, 450), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	putText(panel, string(buffer), Point(5, height-30), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	snprintf(buffer, sizeof(buffer), "%d %%",tel_data.speed/10);
-	putText(panel, string(buffer), Point(20, 470), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	putText(panel, string(buffer), Point(20, height-10), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
-	circle(panel,Point(panel.cols/2,400),16,Scalar(0,0,250),1,8);
+	circle(panel,Point(panel.cols/2,height-80),16,Scalar(0,0,250),1,8);
 	if(tel_data.speed != 0)
 	{
 		if(tel_data.direction==1)
 		{
-			circle(panel,Point(panel.cols/2,400),15,Scalar(0,250,0),CV_FILLED,8);
+			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,250,0),CV_FILLED,8);
 		}
 		else
 		{
-			circle(panel,Point(panel.cols/2,400),15,Scalar(0,0,250),CV_FILLED,8);
+			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,0,250),CV_FILLED,8);
 		}
 	}
 		
@@ -205,9 +207,9 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 	
 	if(tel_data.myline.on_line)
 	{
-		rectangle(image,Point(tel_data.myline.robot_center-5,420),Point(tel_data.myline.robot_center+5,480),Scalar(255,255,255), CV_FILLED, 8);
-		rectangle(image,Point(tel_data.myline.robot_center-5,420),Point(tel_data.myline.robot_center+5,480),Scalar(255,0,0), 1, 8);
-		rectangle(image,Point(tel_data.myline.center_of_line-5,420),Point(tel_data.myline.center_of_line+5,480),Scalar(0,255,0), CV_FILLED, 8);	
+		rectangle(image,Point(tel_data.myline.robot_center-5,height-60),Point(tel_data.myline.robot_center+5,height-1),Scalar(255,255,255), CV_FILLED, 8);
+		rectangle(image,Point(tel_data.myline.robot_center-5,height-60),Point(tel_data.myline.robot_center+5,height-1),Scalar(255,0,0), 1, 8);
+		rectangle(image,Point(tel_data.myline.center_of_line-5,height-60),Point(tel_data.myline.center_of_line+5,height-1),Scalar(0,255,0), CV_FILLED, 8);	
 	}
 	else
 	{
@@ -241,7 +243,13 @@ void init()
 	client->get_data(&width, 2);
 	client->get_data(&height, 2);
 	
+	client->get_data(&signarea,sizeof(Rect));
+	client->get_data(&linearea,sizeof(Rect));
+	
 	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255)); //init main window
+	wroi = window(Rect(Point(0,0),Point(width,height)));
+	panel = window(Rect(Point(width-1,0),Point(width+bordersize-1,height-1)));
+	
 	namedWindow("Stream", WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //create main window
 	
 	crosswalk = imread("../img/crosswalk.jpeg",1);
