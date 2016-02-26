@@ -14,7 +14,7 @@ private:
 	VideoWriter output;
 	bool iscolor;
 public:	
-	bool init(System &syst);
+	bool init(System &syst,int width,int height);
 	void write(Mat& frame);
 	void deinit();
 };

@@ -1,10 +1,10 @@
 #include "videomaker.hpp"
 
 
-bool VideoMaker::init(System &syst)
+bool VideoMaker::init(System &syst,int width,int height)
 {
 	fps = 25;
-	size = Size(640+100, 480);
+	size = Size(width, height);
 	iscolor = true;
 	output.open(syst.videoname, CV_FOURCC('M','J','P','G'), fps, size, iscolor);
     if(!output.isOpened())

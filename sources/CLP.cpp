@@ -3,13 +3,14 @@
 void CLP::usage(const char *progname)
 {
 	printf(
-		"Usage: %s [OPTIONS] [SERVER_IP [PORT]]\n"
+		"Usage: %s [OPTIONS]\n"
 		"Options:\n"
 		"\t-s SERVER_IP - use SERVER_IP\n"
 		"\t-p PORT      - use PORT\n"
 		"\t-v - capture video in file. Example: %s -v myvideo1.avi \n"
+		"\t-c - could be combined with -v. Use it if you want get clear video from camera without any signs and rectangles. Example: %s -c -v myvideo1.avi \n"
 		"\t-h           - display this help\n",
-		progname, progname);
+		progname, progname, progname);
 }
 
 int32_t optind = 1;
@@ -51,7 +52,7 @@ void CLP::parse(int argc, char **argv,System &syst)
 	if (argc == 1) return;
 	
 	int32_t opt;
-	while ((opt = getopt(argc, argv, "hs:p:v:")) != -1)
+	while ((opt = getopt(argc, argv, "hs:p:v:c")) != -1)
 	{
 		
 		switch (opt)
@@ -66,6 +67,9 @@ void CLP::parse(int argc, char **argv,System &syst)
 			break;
 		case 'p':			
 			syst.portno = atoi(optarg);			
+			break;
+		case 'c':
+			syst.clear_video = true;
 			break;
 		case 'v':
 			if (strlen(optarg) > 80)

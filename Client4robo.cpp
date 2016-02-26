@@ -26,12 +26,14 @@ Mat wroi; //область изображения на window
 Mat panel; //область панели информации на window
 Rect signarea;
 Rect linearea;
+Mat img;
+Mat img_clear;
 
 System syst;
 int bordersize =100;
 char screenshot_name[16];
 VideoMaker video;
-Mat img;
+
 Telemetry tel_data;
 int power_val = 1;
 Client *client;
@@ -51,7 +53,6 @@ int main(int argc, char *argv[])
 	CLP::parse(argc, argv, syst);
 	init();
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
-	//printf("Server:  %s:%d \n",syst.host, syst.portno);
 	//printf("Press u to take screenshot\n");
 		
 	while(true)
@@ -65,9 +66,19 @@ int main(int argc, char *argv[])
 		b = vector<uchar>(imgsize);
 		client->get_data(&b[0], imgsize);
 		img = imdecode(b,1);
+		
+		if(syst.clear_video)
+		{
+			img.copyTo(img_clear);
+		}
+		
 		show_telemetry(img,tel_data);
-
-		if(syst.videomaker) video.write(window);
+		
+		if(syst.videomaker)
+		{
+			if(syst.clear_video) video.write(img_clear);
+			else video.write(window);
+		}
 		imshow("Stream", window);
 		
 		int c = waitKey(1);
@@ -120,12 +131,16 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 		memset(panel_row,255,panel.cols*3);
 	}
 	
-	rectangle(image,Point(image.cols/2,0), Point(image.cols-1,image.rows/2),Scalar(255,0,0), 2, 8);//sign area
-	Rect speed_area(Point(10,image.rows-60),Point(50,image.rows-10));
+	rectangle(image, signarea, Scalar(255,0,0), 2, 8);//sign area
 	
-	cv::Scalar color= CV_RGB(255,0,0);
+	Scalar color= CV_RGB(255,0,0);
 	double size =1.1;
 	char buffer[256];
+	snprintf(buffer, sizeof(buffer), "Speed");
+	putText(panel, string(buffer), Point(5, height-140), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	snprintf(buffer, sizeof(buffer), "%.2fm/s",tel_data.real_speed/100.0);
+	putText(panel, string(buffer), Point(5, height-120), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
+	
 	snprintf(buffer, sizeof(buffer), "Power");
 	putText(panel, string(buffer), Point(5, height-30), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	snprintf(buffer, sizeof(buffer), "%d %%",tel_data.speed/10);
@@ -234,6 +249,8 @@ void init()
 {
 	client = new Client(syst);
 	
+	printf("Connecting to %s:%d...\n",syst.host, syst.portno);
+	
 	if(!client->connect())
 	{
 			
@@ -245,6 +262,12 @@ void init()
 	
 	client->get_data(&signarea,sizeof(Rect));
 	client->get_data(&linearea,sizeof(Rect));
+	
+	printf("Connection was successfully established!\n");
+	printf("Resolution: %dx%d\n",width,height);
+	
+	syst.capture_height = height;
+	syst.capture_width = width;
 	
 	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255)); //init main window
 	wroi = window(Rect(Point(0,0),Point(width,height)));
@@ -268,7 +291,16 @@ void init()
 	
 	if(syst.videomaker)
 	{
-		if(video.init(syst))
+		bool vid_init = false;
+		if(syst.clear_video)
+		{
+			vid_init = video.init(syst,width,height);
+		}
+		else
+		{
+			vid_init = video.init(syst,width+bordersize,height);
+		}
+		if(vid_init)
 		{
 			printf("VideoMaker started. File: %s \n",syst.videoname);			
 		}
