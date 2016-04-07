@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <ctime>
 #include "videomaker.hpp"
-#include "telemetry.hpp"
+#include "Engine.hpp"
 #include "signs.hpp"
 #include "config.hpp"
 #include "CLP.hpp"
@@ -26,7 +26,6 @@ Mat wroi; //область изображения на window
 Mat panel; //область панели информации на window
 Rect signarea;
 Rect linearea;
-Mat img;
 Mat img_clear;
 
 System syst;
@@ -34,45 +33,43 @@ int bordersize =100;
 char screenshot_name[16];
 VideoMaker video;
 
-Telemetry tel_data;
+Engine engine;
 int power_val = 1;
 Client *client;
 uint32_t imgsize = 0;
 uint16_t width=0; //Resolution
 uint16_t height=0;
-vector<uchar> b; //vector for image
 
 void error(const char* message); //error function
-void show_telemetry(Mat &image,Telemetry &tel_data);
+void show_telemetry(Mat &image,Engine &tel_data);
 void Power_switcher(int pos, void *ptr);
 void init();
 void deinit();
 
 int main(int argc, char *argv[])
 {
+	Object<Mat> *curObj = NULL;
+	Queue<Mat> &queue = syst.iqueue;
+	
 	CLP::parse(argc, argv, syst);
 	init();
+	/*Создает поток приема данных от сервера*/
+	pthread_t client_thr;
+	pthread_create(&client_thr, NULL, client_fnc, &syst);
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
-	//printf("Press u to take screenshot\n");
+	printf("Press u to take screenshot\n");
 		
 	while(true)
 	{
-		if(!client->get_data(&tel_data,sizeof(Telemetry)))
-		{
-			error("Getting data error");
-		}
-		client->get_data(&imgsize, 4);
-		
-		b = vector<uchar>(imgsize);
-		client->get_data(&b[0], imgsize);
-		img = imdecode(b,1);
+		curObj = queue.waitForNewObject(curObj);
+		Mat &img = *(curObj->obj);
 		
 		if(syst.clear_video)
 		{
 			img.copyTo(img_clear);
 		}
 		
-		show_telemetry(img,tel_data);
+		show_telemetry(img,engine);
 		
 		if(syst.videomaker)
 		{
@@ -119,7 +116,7 @@ int main(int argc, char *argv[])
 
 
 
-void show_telemetry(Mat &image,Telemetry &tel_data)
+void show_telemetry(Mat &image,Engine &tel_data)
 {
 	//printf("%d %d %d\n",tel_data.speed,tel_data.direction,tel_data.angle);
 	//create window//

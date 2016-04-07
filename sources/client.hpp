@@ -12,6 +12,14 @@ typedef int socklen_t
 #pragma comment(lib, "Ws2_32.lib")
 #endif
 
+enum dataType
+{
+	Image_t = 0,
+	Engine_t = 1,
+	Sing_t = 2,
+	Line_t = 3
+};
+
 class Client
 {
 	private:
@@ -27,3 +35,5 @@ class Client
 	bool connect();
 	void disconnect();
 };
+
+void *client_fnc(void *ptr);

@@ -3,6 +3,7 @@
 Client::Client(System &conf)
 {
 	syst = &conf;
+	//syst.client = this;
 }
 
 bool Client::connect()
@@ -99,4 +100,63 @@ bool Client::send_data(void *src,size_t size)
 		}
 	}
 	return true;
+}
+
+void *client_fnc(void *ptr)
+{
+	System &syst = *((System *)ptr);
+	//Client &client = *(syst.client);
+	Queue<Mat> &iqueue = syst.iqueue;
+	
+	dataType tp;
+	uint32_t dataSize;
+	
+	vector<uchar> b; //vector for image
+	
+	while(1)
+	{
+		client.get_data(&tp, sizeof(uint32_t));
+		client.get_data(&dataSize, sizeof(uint32_t));
+		switch(tp)
+		{
+			case Image_t:
+			{
+				client.get_data(&b[0], (size_t)dataSize);
+				Object<Mat> *newObj = new Object<Mat>();
+				*(newObj->obj) = imdecode(b,1);
+				iqueue.push(newObj);
+				break;
+			}
+			case Line_t:
+			{
+				line_data locale;
+				client.get_data(&locale, (size_t)dataSize);
+				syst.line_set(locale);
+				break;
+			}
+			case Sing_t:
+			{
+				sign_data locale;
+				client.get_data(&locale, (size_t)dataSize);
+				
+				break;
+			}
+			case Engine_t:
+			{
+				Engine locale;
+				client.get_data(&locale, (size_t)dataSize);
+				break;
+			}
+			default:
+			{
+				printf("[W]: Unknown data format\n");
+				char *freebuffer = new char[dataSize];
+				client.get_data(freebuffer, (size_t)dataSize);
+				delete[] freebuffer;
+				break;
+			}
+		}
+		
+	}
+	return NULL;
 }
