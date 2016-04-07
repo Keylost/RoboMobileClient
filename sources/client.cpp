@@ -102,14 +102,12 @@ bool Client::send_data(void *src,size_t size)
 	return true;
 }
 
-void *client_fnc(void *ptr)
+void client_fnc(System &syst,Client &client)
 {
-	System &syst = *((System *)ptr);
-	//Client &client = *(syst.client);
 	Queue<Mat> &iqueue = syst.iqueue;
 	
 	dataType tp;
-	uint32_t dataSize;
+	uint32_t dataSize=0;
 	
 	vector<uchar> b; //vector for image
 	
@@ -117,14 +115,21 @@ void *client_fnc(void *ptr)
 	{
 		client.get_data(&tp, sizeof(uint32_t));
 		client.get_data(&dataSize, sizeof(uint32_t));
+		
 		switch(tp)
 		{
 			case Image_t:
 			{
-				client.get_data(&b[0], (size_t)dataSize);
+				b = vector<uchar>(dataSize);
+				if(!client.get_data(&b[0], (size_t)dataSize))
+				{
+					perror("Get data");
+					exit(EXIT_FAILURE);
+				}
 				Object<Mat> *newObj = new Object<Mat>();
 				*(newObj->obj) = imdecode(b,1);
 				iqueue.push(newObj);
+				b.clear();
 				break;
 			}
 			case Line_t:
@@ -158,5 +163,5 @@ void *client_fnc(void *ptr)
 		}
 		
 	}
-	return NULL;
+	return;
 }

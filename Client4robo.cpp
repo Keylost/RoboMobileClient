@@ -11,6 +11,7 @@
 #include "config.hpp"
 #include "CLP.hpp"
 #include <string>
+#include <thread>
 
 #ifdef _MSC_VER
 #define snprintf _snprintf_s 
@@ -27,6 +28,7 @@ Mat panel; //область панели информации на window
 Rect signarea;
 Rect linearea;
 Mat img_clear;
+line_data myline;
 
 System syst;
 int bordersize =100;
@@ -54,8 +56,7 @@ int main(int argc, char *argv[])
 	CLP::parse(argc, argv, syst);
 	init();
 	/*Создает поток приема данных от сервера*/
-	pthread_t client_thr;
-	pthread_create(&client_thr, NULL, client_fnc, &syst);
+	thread thr(client_fnc,ref(syst),ref(*client));
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
 	printf("Press u to take screenshot\n");
 		
@@ -92,7 +93,8 @@ int main(int argc, char *argv[])
 				printf("[I]: screenshot cant't be saved. No access/No codecs\n");
 			}
 		}
-		b.clear();	
+		
+		curObj->free();
 	}
 
 	deinit();
@@ -118,8 +120,8 @@ int main(int argc, char *argv[])
 
 void show_telemetry(Mat &image,Engine &tel_data)
 {
-	//printf("%d %d %d\n",tel_data.speed,tel_data.direction,tel_data.angle);
 	//create window//
+	syst.line_get(myline);
 	
 	uint8_t *panel_row;
 	for(int i=0;i<panel.rows;i++)
@@ -159,6 +161,7 @@ void show_telemetry(Mat &image,Engine &tel_data)
 	Mat ROI;
 	int xindent;
 	int yindent = 10;
+	/*
 	switch(tel_data.mysign.sign)
 	{		
 		case sign_none:
@@ -215,13 +218,13 @@ void show_telemetry(Mat &image,Engine &tel_data)
 		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);
 	}
 	//EXPERIMENTAL AREA//
+	*/
 	
-	
-	if(tel_data.myline.on_line)
+	if(myline.on_line)
 	{
-		rectangle(image,Point(tel_data.myline.robot_center-5,height-60),Point(tel_data.myline.robot_center+5,height-1),Scalar(255,255,255), CV_FILLED, 8);
-		rectangle(image,Point(tel_data.myline.robot_center-5,height-60),Point(tel_data.myline.robot_center+5,height-1),Scalar(255,0,0), 1, 8);
-		rectangle(image,Point(tel_data.myline.center_of_line-5,height-60),Point(tel_data.myline.center_of_line+5,height-1),Scalar(0,255,0), CV_FILLED, 8);	
+		rectangle(image,Point(myline.robot_center-5,height-60),Point(myline.robot_center+5,height-1),Scalar(255,255,255), CV_FILLED, 8);
+		rectangle(image,Point(myline.robot_center-5,height-60),Point(myline.robot_center+5,height-1),Scalar(255,0,0), 1, 8);
+		rectangle(image,Point(myline.center_of_line-5,height-60),Point(myline.center_of_line+5,height-1),Scalar(0,255,0), CV_FILLED, 8);	
 	}
 	else
 	{

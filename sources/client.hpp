@@ -36,4 +36,4 @@ class Client
 	void disconnect();
 };
 
-void *client_fnc(void *ptr);
+void client_fnc(System &syst,Client &client);
