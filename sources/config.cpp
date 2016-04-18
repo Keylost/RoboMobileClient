@@ -13,3 +13,17 @@ void System::line_set(line_data &source)
 	memcpy(&Line,&source,sizeof(line_data));
 	line_mutex.unlock();
 }
+
+void System::signs_get(vector<sign_data> &destination)
+{
+	sign_mutex.lock();
+	destination = Signs;
+	sign_mutex.unlock();
+}
+
+void System::signs_set(vector<sign_data> &source)
+{
+	sign_mutex.lock();
+	Signs = source;
+	sign_mutex.unlock();
+}

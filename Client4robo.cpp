@@ -29,6 +29,7 @@ Rect signarea;
 Rect linearea;
 Mat img_clear;
 line_data myline;
+vector<sign_data> mysigns;
 
 System syst;
 int bordersize =100;
@@ -122,6 +123,7 @@ void show_telemetry(Mat &image,Engine &tel_data)
 {
 	//create window//
 	syst.line_get(myline);
+	syst.signs_get(mysigns);
 	
 	uint8_t *panel_row;
 	for(int i=0;i<panel.rows;i++)
@@ -161,64 +163,61 @@ void show_telemetry(Mat &image,Engine &tel_data)
 	Mat ROI;
 	int xindent;
 	int yindent = 10;
-	/*
-	switch(tel_data.mysign.sign)
-	{		
-		case sign_none:
-			break;
-		case sign_crosswalk:
-			xindent = (panel.cols - crosswalk.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
-			crosswalk.copyTo(ROI);			
-			break;
-		case sign_stop:
-			xindent = (panel.cols - stop.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
-			stop.copyTo(ROI);
-			break;
-		case sign_mainroad:
-			xindent = (panel.cols - mainroad.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
-			mainroad.copyTo(ROI);
-			break;
-		case sign_giveway:
-			xindent = (panel.cols - giveway.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
-			giveway.copyTo(ROI);
-			break;
-		case sign_trafficlight:
-			xindent = (panel.cols - green_light.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
-			
-			if(tel_data.mysign.state==greenlight)
-			{
-				green_light.copyTo(ROI);				
-			}
-			else if(tel_data.mysign.state==redlight)
-			{
-				red_light.copyTo(ROI);
-			}
-			else if(tel_data.mysign.state==yellowlight)
-			{
-				yellow_light.copyTo(ROI);
-			}
-			else printf("Sign state data corrupted\n");
-			break;
-		default:
-			break;
-	}
 	
-	//EXPERIMENTAL AREA//
-	if(tel_data.mysign.sign==sign_mainroad || tel_data.mysign.sign == sign_giveway)
+	for(unsigned i=0;i<mysigns.size();i++)
 	{
-		int fx = width/2 + tel_data.mysign.area.x;
-		int fy = 0 + tel_data.mysign.area.y;
-		int ex = fx + tel_data.mysign.area.width;
-		int ey = fy + tel_data.mysign.area.height;
-		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);
+		switch(mysigns[i].sign)
+		{		
+			case sign_none:
+				break;
+			case sign_crosswalk:
+				xindent = (panel.cols - crosswalk.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
+				crosswalk.copyTo(ROI);			
+				break;
+			case sign_stop:
+				xindent = (panel.cols - stop.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				stop.copyTo(ROI);
+				break;
+			case sign_mainroad:
+				xindent = (panel.cols - mainroad.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				mainroad.copyTo(ROI);
+				break;
+			case sign_giveway:
+				xindent = (panel.cols - giveway.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				giveway.copyTo(ROI);
+				break;
+			case sign_trafficlight:
+				xindent = (panel.cols - green_light.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
+				
+				if(mysigns[i].state==greenlight)
+				{
+					green_light.copyTo(ROI);				
+				}
+				else if(mysigns[i].state==redlight)
+				{
+					red_light.copyTo(ROI);
+				}
+				else if(mysigns[i].state==yellowlight)
+				{
+					yellow_light.copyTo(ROI);
+				}
+				else printf("Sign state data corrupted\n");
+				break;
+			default:
+				break;
+		}
+		
+		int fx = width/2 + mysigns[i].area.x;
+		int fy = 0 + mysigns[i].area.y;
+		int ex = fx + mysigns[i].area.width;
+		int ey = fy + mysigns[i].area.height;
+		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);	
 	}
-	//EXPERIMENTAL AREA//
-	*/
 	
 	if(myline.on_line)
 	{

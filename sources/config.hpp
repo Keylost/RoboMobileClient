@@ -16,15 +16,28 @@ using namespace std;
 class System
 {
 	public:
-		mutex line_mutex; //мутекс для контроля доступа к Engine
+		mutex line_mutex; //мутекс для контроля доступа к данным линии
+		mutex sign_mutex; //мутекс для контроля доступа к данным 
 		uint32_t  portno;
 		bool videomaker;
 		char videoname[80];
 		char* host;
 		int32_t capture_width;
 		int32_t capture_height;
+		
+		/*
+		 * Очередь полученных с сервера кадров
+		 */
 		Queue<Mat> iqueue;
+		
+		/*
+		 * Глобальная структура с текущими данными линии 
+		 */
 		line_data Line;
+		
+		/*
+		 * Массив полученнных от сервера знаков
+		 */
 		vector<sign_data> Signs;
 		
 		
@@ -48,4 +61,6 @@ class System
 		
 		void line_get(line_data &destination);
 		void line_set(line_data &source);
+		void signs_get(vector<sign_data> &destination);
+		void signs_set(vector<sign_data> &source);
 };

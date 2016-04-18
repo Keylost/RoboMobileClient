@@ -3,7 +3,6 @@
 Client::Client(System &conf)
 {
 	syst = &conf;
-	//syst.client = this;
 }
 
 bool Client::connect()
@@ -106,6 +105,9 @@ void client_fnc(System &syst,Client &client)
 {
 	Queue<Mat> &iqueue = syst.iqueue;
 	
+	vector<sign_data> locale;
+	sign_data sig;
+	
 	dataType tp;
 	uint32_t dataSize=0;
 	
@@ -134,15 +136,28 @@ void client_fnc(System &syst,Client &client)
 			}
 			case Line_t:
 			{
-				line_data locale;
-				client.get_data(&locale, (size_t)dataSize);
-				syst.line_set(locale);
+				line_data localeLine;
+				client.get_data(&localeLine, (size_t)dataSize);
+				syst.line_set(localeLine);
 				break;
 			}
 			case Sing_t:
-			{
-				sign_data locale;
-				client.get_data(&locale, (size_t)dataSize);
+			{				
+				client.get_data(&sig, (size_t)dataSize);				
+				
+				unsigned i=0;
+				for(;i<locale.size();i++)
+				{
+					if(locale[i].sign == sig.sign)
+					{
+						locale[i] = sig;
+						break;
+					}
+				}
+				if(i==locale.size())
+				{
+					locale.push_back(sig);
+				}				
 				
 				break;
 			}
@@ -161,6 +176,16 @@ void client_fnc(System &syst,Client &client)
 				break;
 			}
 		}
+		
+		for(unsigned i=0;i<locale.size();i++)
+		{
+			locale[i].detect_time+=50;
+			if(locale[i].detect_time>1000)
+			{
+				locale.erase(locale.begin()+i);
+			}
+		}
+		syst.signs_set(locale);
 		
 	}
 	return;
