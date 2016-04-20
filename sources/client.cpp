@@ -165,6 +165,7 @@ void client_fnc(System &syst,Client &client)
 			{
 				Engine locale;
 				client.get_data(&locale, (size_t)dataSize);
+				syst.engine_set(locale);
 				break;
 			}
 			default:

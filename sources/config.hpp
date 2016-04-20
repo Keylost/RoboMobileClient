@@ -17,7 +17,8 @@ class System
 {
 	public:
 		mutex line_mutex; //мутекс для контроля доступа к данным линии
-		mutex sign_mutex; //мутекс для контроля доступа к данным 
+		mutex sign_mutex; //мутекс для контроля доступа к данным знаков
+		mutex engine_mutex; //мутекс для контроля доступа к данным engine
 		uint32_t  portno;
 		bool videomaker;
 		char videoname[80];
@@ -40,6 +41,10 @@ class System
 		 */
 		vector<sign_data> Signs;
 		
+		/*
+		 * 
+		 */
+		Engine engine;
 		
 		/*
 		 * Если флаг clear_video установлен(true) при записе видео через параметр -v
@@ -61,6 +66,8 @@ class System
 		
 		void line_get(line_data &destination);
 		void line_set(line_data &source);
+		void engine_get(Engine &destination);
+		void engine_set(Engine &source);
 		void signs_get(vector<sign_data> &destination);
 		void signs_set(vector<sign_data> &source);
 };

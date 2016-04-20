@@ -30,13 +30,13 @@ Rect linearea;
 Mat img_clear;
 line_data myline;
 vector<sign_data> mysigns;
+Engine engine;
 
 System syst;
 int bordersize =100;
 char screenshot_name[16];
 VideoMaker video;
 
-Engine engine;
 int power_val = 1;
 Client *client;
 uint32_t imgsize = 0;
@@ -44,7 +44,7 @@ uint16_t width=0; //Resolution
 uint16_t height=0;
 
 void error(const char* message); //error function
-void show_telemetry(Mat &image,Engine &tel_data);
+void show_telemetry(Mat &image);
 void Power_switcher(int pos, void *ptr);
 void init();
 void deinit();
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 			img.copyTo(img_clear);
 		}
 		
-		show_telemetry(img,engine);
+		show_telemetry(img);
 		
 		if(syst.videomaker)
 		{
@@ -119,11 +119,12 @@ int main(int argc, char *argv[])
 
 
 
-void show_telemetry(Mat &image,Engine &tel_data)
+void show_telemetry(Mat &image)
 {
 	//create window//
 	syst.line_get(myline);
 	syst.signs_get(mysigns);
+	syst.engine_get(engine);
 	
 	uint8_t *panel_row;
 	for(int i=0;i<panel.rows;i++)
@@ -139,18 +140,18 @@ void show_telemetry(Mat &image,Engine &tel_data)
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "Speed");
 	putText(panel, string(buffer), Point(5, height-140), FONT_HERSHEY_COMPLEX_SMALL, size, color);
-	snprintf(buffer, sizeof(buffer), "%.2fm/s",tel_data.real_speed/100.0);
+	snprintf(buffer, sizeof(buffer), "%.2fm/s",engine.real_speed/100.0);
 	putText(panel, string(buffer), Point(5, height-120), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
 	
 	snprintf(buffer, sizeof(buffer), "Power");
 	putText(panel, string(buffer), Point(5, height-30), FONT_HERSHEY_COMPLEX_SMALL, size, color);
-	snprintf(buffer, sizeof(buffer), "%d %%",tel_data.speed/10);
+	snprintf(buffer, sizeof(buffer), "%d %%",engine.speed/10);
 	putText(panel, string(buffer), Point(20, height-10), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
 	circle(panel,Point(panel.cols/2,height-80),16,Scalar(0,0,250),1,8);
-	if(tel_data.speed != 0)
+	if(engine.speed != 0)
 	{
-		if(tel_data.direction==1)
+		if(engine.direction==1)
 		{
 			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,250,0),CV_FILLED,8);
 		}

@@ -27,3 +27,17 @@ void System::signs_set(vector<sign_data> &source)
 	Signs = source;
 	sign_mutex.unlock();
 }
+
+void System::engine_get(Engine &destination)
+{
+	engine_mutex.lock();
+	memcpy(&destination,&engine,sizeof(Engine));
+	engine_mutex.unlock();
+}
+
+void System::engine_set(Engine &source)
+{
+	engine_mutex.lock();
+	memcpy(&engine,&source,sizeof(Engine));
+	engine_mutex.unlock();
+}
