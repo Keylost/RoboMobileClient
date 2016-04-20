@@ -21,6 +21,7 @@ using namespace std;
 using namespace cv;
 
 Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
+Mat start_greenlight, start_redlight;
 Mat giveway,mainroad;
 Mat window;
 Mat wroi; //область изображения на window
@@ -139,61 +140,74 @@ void show_telemetry(Mat &image)
 	double size =1.1;
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "Speed");
-	putText(panel, string(buffer), Point(5, height-140), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	putText(panel, string(buffer), Point(5, height-100), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	snprintf(buffer, sizeof(buffer), "%.2fm/s",engine.real_speed/100.0);
-	putText(panel, string(buffer), Point(5, height-120), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
+	putText(panel, string(buffer), Point(5, height-80), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
 	
 	snprintf(buffer, sizeof(buffer), "Power");
 	putText(panel, string(buffer), Point(5, height-30), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	snprintf(buffer, sizeof(buffer), "%d %%",engine.speed/10);
 	putText(panel, string(buffer), Point(20, height-10), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
-	circle(panel,Point(panel.cols/2,height-80),16,Scalar(0,0,250),1,8);
+	circle(panel,Point(panel.cols/2,height-60),11,Scalar(0,0,250),1,8);
 	if(engine.speed != 0)
 	{
 		if(engine.direction==1)
 		{
-			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,250,0),CV_FILLED,8);
+			circle(panel,Point(panel.cols/2,height-60),10,Scalar(0,250,0),CV_FILLED,8);
 		}
 		else
 		{
-			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,0,250),CV_FILLED,8);
+			circle(panel,Point(panel.cols/2,height-60),10,Scalar(0,0,250),CV_FILLED,8);
 		}
 	}
 		
 	Mat ROI;
 	int xindent;
-	int yindent = 10;
+	int yindent = 0;
 	
+	/* Отсортировать знаки по времени обнаружения
+	std::sort(mysigns.begin(), mysigns.end(), [](const sign_data& a, const sign_data& b)
+	{
+		return a.detect_time < b.detect_time;
+	});*/
 	for(unsigned i=0;i<mysigns.size();i++)
 	{
+		yindent += 10;
+		//проверить выход за границы области рисования знаков
+		if(yindent>=200) break;
 		switch(mysigns[i].sign)
-		{		
+		{
 			case sign_none:
 				break;
 			case sign_crosswalk:
 				xindent = (panel.cols - crosswalk.cols)/2;
 				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
+				yindent += crosswalk.rows;
 				crosswalk.copyTo(ROI);			
 				break;
 			case sign_stop:
 				xindent = (panel.cols - stop.cols)/2;
 				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				yindent += stop.rows;
 				stop.copyTo(ROI);
 				break;
 			case sign_mainroad:
 				xindent = (panel.cols - mainroad.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+mainroad.rows)));
+				yindent += mainroad.rows;
 				mainroad.copyTo(ROI);
 				break;
 			case sign_giveway:
 				xindent = (panel.cols - giveway.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+giveway.rows)));
+				yindent += giveway.rows;
 				giveway.copyTo(ROI);
 				break;
 			case sign_trafficlight:
 				xindent = (panel.cols - green_light.cols)/2;
 				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
+				yindent += green_light.rows;
 				
 				if(mysigns[i].state==greenlight)
 				{
@@ -206,6 +220,21 @@ void show_telemetry(Mat &image)
 				else if(mysigns[i].state==yellowlight)
 				{
 					yellow_light.copyTo(ROI);
+				}
+				else printf("Sign state data corrupted\n");
+				break;
+			case sign_starttrafficlight:
+				xindent = (panel.cols - start_greenlight.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+start_greenlight.cols,yindent+start_greenlight.rows)));
+				yindent += start_greenlight.rows;
+				
+				if(mysigns[i].state==greenlight)
+				{
+					start_greenlight.copyTo(ROI);				
+				}
+				else if(mysigns[i].state==redlight)
+				{
+					start_redlight.copyTo(ROI);
 				}
 				else printf("Sign state data corrupted\n");
 				break;
@@ -275,14 +304,45 @@ void init()
 	
 	namedWindow("Stream", WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //create main window
 	
+	double signHeight = 50;
+	Size newSignSize;
+	newSignSize.height = signHeight;
 	crosswalk = imread("../img/crosswalk.jpeg",1);
+	newSignSize.width = crosswalk.cols/(crosswalk.rows/signHeight);
+	resize(crosswalk,crosswalk,newSignSize);
+	
 	stop = imread("../img/stop.jpeg",1);
+	newSignSize.width = stop.cols/(stop.rows/signHeight);
+	resize(stop,stop,newSignSize);
+	
 	green_light = imread("../img/green_light_s.jpg",1);
+	newSignSize.width = green_light.cols/(green_light.rows/signHeight);
+	resize(green_light,green_light,newSignSize);
+	
 	red_light = imread("../img/red_light_s.jpg",1);
+	newSignSize.width = red_light.cols/(red_light.rows/signHeight);
+	resize(red_light,red_light,newSignSize);
+	
 	yellow_light = imread("../img/yellow_light_s.jpg",1);
+	newSignSize.width = yellow_light.cols/(yellow_light.rows/signHeight);
+	resize(yellow_light,yellow_light,newSignSize);
+	
+	start_greenlight = imread("../img/st_green_light_s.jpg",1);
+	newSignSize.width = start_greenlight.cols/(start_greenlight.rows/signHeight);
+	resize(start_greenlight,start_greenlight,newSignSize);
+	
+	start_redlight = imread("../img/st_red_light_s.jpg",1);
+	newSignSize.width = start_redlight.cols/(start_redlight.rows/signHeight);
+	resize(start_redlight,start_redlight,newSignSize);	
+	
 	no_line = imread("../img/no_line.png",1);
 	giveway = imread("../img/ustupi.jpg",1);
+	newSignSize.width = giveway.cols/(giveway.rows/signHeight);
+	resize(giveway,giveway,newSignSize);
+	
 	mainroad = imread("../img/glavnaya.jpg",1);
+	newSignSize.width = mainroad.cols/(mainroad.rows/signHeight);
+	resize(mainroad,mainroad,newSignSize);	
 	
 	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
 	{
