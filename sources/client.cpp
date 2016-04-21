@@ -1,5 +1,18 @@
 #include "client.hpp"
 
+/* поддерживать соединение с другой стороной */
+void keepAliveEnable(int sockfd)
+{
+	int32_t optval = 1;
+	size_t optlen = sizeof(optval);
+	if(setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, optlen) < 0)
+	{
+		perror("keepAliveEnable()");
+		close(sockfd);
+		exit(EXIT_FAILURE);
+	}
+}
+
 Client::Client(System &conf)
 {
 	syst = &conf;
@@ -60,6 +73,8 @@ bool Client::connect()
 	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
 	setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
 	
+	keepAliveEnable(sockfd);
+	
 	return true;
 }
 
@@ -72,7 +87,7 @@ void Client::disconnect()
 	#endif
 }
 
-bool Client::get_data(void *dst, size_t size)
+void Client::get_data(void *dst, size_t size)
 {
 	size_t i=0;
 	int bytes =0;
@@ -80,25 +95,29 @@ bool Client::get_data(void *dst, size_t size)
 	{
 		if ((bytes = recv(sockfd, (char *)dst+i, size-i, 0)) <= 0) 
 		{
-			return false;//error("getting data error");
+			printf("client_fnc(): Getting data error. Server is dead\n");
+			disconnect();
+			exit(EXIT_FAILURE);
 		}
 	}
-	return true;
+	return;
 }
 
-bool Client::send_data(void *src,size_t size)
+void Client::send_data(void *src,size_t size)
 {
 	int bytes = 0;
 	size_t i = 0;
 
 	for (i = 0; i < size; i += bytes) 
 	{
-		if ((bytes = send(sockfd, ((char *)src)+i, size-i, 0)) == -1)
+		if ((bytes = send(sockfd, ((char *)src)+i, size-i, 0)) <= 0)
 		{
-			return false;
+			printf("client_fnc(): Sending data error. Server is dead\n");
+			disconnect();
+			exit(EXIT_FAILURE);
 		}
 	}
-	return true;
+	return;
 }
 
 void client_fnc(System &syst,Client &client)
@@ -123,11 +142,7 @@ void client_fnc(System &syst,Client &client)
 			case Image_t:
 			{
 				b = vector<uchar>(dataSize);
-				if(!client.get_data(&b[0], (size_t)dataSize))
-				{
-					perror("Get data");
-					exit(EXIT_FAILURE);
-				}
+				client.get_data(&b[0], (size_t)dataSize);
 				Object<Mat> *newObj = new Object<Mat>();
 				*(newObj->obj) = imdecode(b,1);
 				iqueue.push(newObj);

@@ -282,7 +282,6 @@ void init()
 	
 	if(!client->connect())
 	{
-			
 		error("Can't connect to server.");
 	}
 	

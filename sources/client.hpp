@@ -31,8 +31,8 @@ class Client
 	
 	public:
 	Client(System &conf);
-	bool get_data(void *dst, size_t size);
-	bool send_data(void *src, size_t size);
+	void get_data(void *dst, size_t size);
+	void send_data(void *src, size_t size);
 	bool connect();
 	void disconnect();
 };
