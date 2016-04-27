@@ -41,3 +41,19 @@ void System::engine_set(Engine &source)
 	memcpy(&engine,&source,sizeof(Engine));
 	engine_mutex.unlock();
 }
+
+void System::setExitState()
+{
+	exitState_mutex.lock();
+	exitState = true;
+	exitState_mutex.unlock();
+}
+
+bool System::getExitState()
+{
+	bool state;
+	exitState_mutex.lock();
+	state = exitState;
+	exitState_mutex.unlock();
+	return state;
+}

@@ -134,6 +134,7 @@ void client_fnc(System &syst,Client &client)
 	
 	while(1)
 	{
+		if(syst.getExitState()) break;
 		client.get_data(&tp, sizeof(uint32_t));
 		client.get_data(&dataSize, sizeof(uint32_t));
 		
@@ -204,5 +205,8 @@ void client_fnc(System &syst,Client &client)
 		syst.signs_set(locale);
 		
 	}
+	
+	client.disconnect();
+	
 	return;
 }

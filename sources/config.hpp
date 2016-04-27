@@ -19,12 +19,14 @@ class System
 		mutex line_mutex; //мутекс для контроля доступа к данным линии
 		mutex sign_mutex; //мутекс для контроля доступа к данным знаков
 		mutex engine_mutex; //мутекс для контроля доступа к данным engine
+		mutex exitState_mutex; //мутекс для контроля доступа к данным engine
 		uint32_t  portno;
 		bool videomaker;
 		char videoname[80];
 		char* host;
 		int32_t capture_width;
 		int32_t capture_height;
+		bool exitState;
 		
 		/*
 		 * Очередь полученных с сервера кадров
@@ -55,6 +57,7 @@ class System
 		
 		System()
 		{
+			exitState = false;
 			host = new char[strlen("192.168.111.1")+1];
 			memcpy(host, "192.168.111.1", strlen("192.168.111.1")+1);
 			portno = 1111;
@@ -70,4 +73,6 @@ class System
 		void engine_set(Engine &source);
 		void signs_get(vector<sign_data> &destination);
 		void signs_set(vector<sign_data> &source);
+		bool getExitState();
+		void setExitState();
 };

@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
 	init();
 	/*Создает поток приема данных от сервера*/
 	thread thr(client_fnc,ref(syst),ref(*client));
+	thr.detach();
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
 	printf("Press u to take screenshot\n");
 		
@@ -82,7 +83,10 @@ int main(int argc, char *argv[])
 		imshow("Stream", window);
 		
 		int c = waitKey(1);
-		if(c==27) break;
+		if(c==27)
+		{
+			break;
+		}
 		else if(c==117) //take screenshot u
 		{
 			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", time(NULL));
@@ -376,7 +380,9 @@ void deinit()
 {
 	video.deinit();
 	destroyAllWindows();
-	client->disconnect();
+	syst.setExitState();
+	sleep(1);
+	exit(EXIT_SUCCESS);
 }
 
 void error(const char* message)
