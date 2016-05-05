@@ -1,0 +1,76 @@
+template<typename T>
+Queue<T>::Queue()
+{
+	_obj = NULL;
+	_lock = PTHREAD_MUTEX_INITIALIZER;
+}
+
+template<typename T>
+void Queue<T>::push(Object<T> *obj)
+{
+	obj->useCount=1; //очередь получает объект раньше всех потоков
+	pthread_mutex_lock(&(_lock));
+	if(_obj!=NULL) _obj->free();
+	_obj = obj;
+	pthread_mutex_unlock(&(_lock));
+	return;
+}
+
+template<typename T>
+Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj)
+{
+	Object<T> *oldobj = curObj;
+	while(1)
+	{
+		pthread_mutex_lock(&(_lock));
+		curObj = _obj;
+		pthread_mutex_unlock(&(_lock));
+		if(curObj==NULL || oldobj==curObj)
+		{
+			usleep(1000); //1 ms
+		}
+		else
+		{
+			curObj->busy();
+			break;
+		}
+	}
+	return curObj;
+}
+
+template<typename T>
+Object<T>::Object()
+{
+	useLock = PTHREAD_MUTEX_INITIALIZER;
+	obj = new T();
+	useCount = 0;
+}
+
+template<typename T>
+Object<T>::~Object()
+{
+	delete obj;
+}
+
+template<typename T>
+void Object<T>::free()
+{
+	if(useCount==1)
+	{
+		delete this;
+		return;
+	}
+	pthread_mutex_lock(&(useLock));
+	useCount--;
+	pthread_mutex_unlock(&(useLock));
+	return;
+}
+
+template<typename T>
+void Object<T>::busy()
+{
+	pthread_mutex_lock(&(useLock));
+	useCount++;
+	pthread_mutex_unlock(&(useLock));
+	return;
+}
