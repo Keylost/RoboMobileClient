@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 		}
 		else if(c==117) //take screenshot u
 		{
-			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", time(NULL));
+			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", (long unsigned)time(NULL));
 			if(imwrite(screenshot_name, img))
 			{
 				printf("[I]: screenshot %s saved\n", screenshot_name);
@@ -309,42 +309,42 @@ void init()
 	
 	double signHeight = 50;
 	Size newSignSize;
-	newSignSize.height = signHeight;
+	newSignSize.height = (int)signHeight;
 	crosswalk = imread("../img/crosswalk.jpeg",1);
-	newSignSize.width = crosswalk.cols/(crosswalk.rows/signHeight);
+	newSignSize.width = (int)(crosswalk.cols/(crosswalk.rows/signHeight));
 	resize(crosswalk,crosswalk,newSignSize);
 	
 	stop = imread("../img/stop.jpeg",1);
-	newSignSize.width = stop.cols/(stop.rows/signHeight);
+	newSignSize.width = (int)(stop.cols/(stop.rows/signHeight));
 	resize(stop,stop,newSignSize);
 	
 	green_light = imread("../img/green_light_s.jpg",1);
-	newSignSize.width = green_light.cols/(green_light.rows/signHeight);
+	newSignSize.width = (int)(green_light.cols/(green_light.rows/signHeight));
 	resize(green_light,green_light,newSignSize);
 	
 	red_light = imread("../img/red_light_s.jpg",1);
-	newSignSize.width = red_light.cols/(red_light.rows/signHeight);
+	newSignSize.width = (int)(red_light.cols/(red_light.rows/signHeight));
 	resize(red_light,red_light,newSignSize);
 	
 	yellow_light = imread("../img/yellow_light_s.jpg",1);
-	newSignSize.width = yellow_light.cols/(yellow_light.rows/signHeight);
+	newSignSize.width = (int)(yellow_light.cols/(yellow_light.rows/signHeight));
 	resize(yellow_light,yellow_light,newSignSize);
 	
 	start_greenlight = imread("../img/st_green_light_s.jpg",1);
-	newSignSize.width = start_greenlight.cols/(start_greenlight.rows/signHeight);
+	newSignSize.width = (int)(start_greenlight.cols/(start_greenlight.rows/signHeight));
 	resize(start_greenlight,start_greenlight,newSignSize);
 	
 	start_redlight = imread("../img/st_red_light_s.jpg",1);
-	newSignSize.width = start_redlight.cols/(start_redlight.rows/signHeight);
+	newSignSize.width = (int)(start_redlight.cols/(start_redlight.rows/signHeight));
 	resize(start_redlight,start_redlight,newSignSize);	
 	
 	no_line = imread("../img/no_line.png",1);
 	giveway = imread("../img/ustupi.jpg",1);
-	newSignSize.width = giveway.cols/(giveway.rows/signHeight);
+	newSignSize.width = (int)(giveway.cols/(giveway.rows/signHeight));
 	resize(giveway,giveway,newSignSize);
 	
 	mainroad = imread("../img/glavnaya.jpg",1);
-	newSignSize.width = mainroad.cols/(mainroad.rows/signHeight);
+	newSignSize.width = (int)(mainroad.cols/(mainroad.rows/signHeight));
 	resize(mainroad,mainroad,newSignSize);	
 	
 	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
