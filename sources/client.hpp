@@ -9,7 +9,7 @@
 #include <unistd.h>
 #else
 #include <windows.h>
-typedef int socklen_t
+typedef int socklen_t;
 #pragma comment(lib, "Ws2_32.lib")
 #endif
 

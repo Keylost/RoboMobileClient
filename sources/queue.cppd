@@ -2,17 +2,16 @@ template<typename T>
 Queue<T>::Queue()
 {
 	_obj = NULL;
-	_lock = PTHREAD_MUTEX_INITIALIZER;
 }
 
 template<typename T>
 void Queue<T>::push(Object<T> *obj)
 {
 	obj->useCount=1; //очередь получает объект раньше всех потоков
-	pthread_mutex_lock(&(_lock));
+	_lock.lock();
 	if(_obj!=NULL) _obj->free();
 	_obj = obj;
-	pthread_mutex_unlock(&(_lock));
+	_lock.unlock();
 	return;
 }
 
@@ -22,12 +21,12 @@ Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj)
 	Object<T> *oldobj = curObj;
 	while(1)
 	{
-		pthread_mutex_lock(&(_lock));
+		_lock.lock();
 		curObj = _obj;
-		pthread_mutex_unlock(&(_lock));
+		_lock.unlock();
 		if(curObj==NULL || oldobj==curObj)
 		{
-			usleep(1000); //1 ms
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 		else
 		{
@@ -41,7 +40,6 @@ Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj)
 template<typename T>
 Object<T>::Object()
 {
-	useLock = PTHREAD_MUTEX_INITIALIZER;
 	obj = new T();
 	useCount = 0;
 }
@@ -60,17 +58,17 @@ void Object<T>::free()
 		delete this;
 		return;
 	}
-	pthread_mutex_lock(&(useLock));
+	useLock.lock();
 	useCount--;
-	pthread_mutex_unlock(&(useLock));
+	useLock.unlock();
 	return;
 }
 
 template<typename T>
 void Object<T>::busy()
 {
-	pthread_mutex_lock(&(useLock));
+	useLock.lock();
 	useCount++;
-	pthread_mutex_unlock(&(useLock));
+	useLock.unlock();
 	return;
 }

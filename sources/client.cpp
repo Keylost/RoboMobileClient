@@ -8,7 +8,11 @@ void keepAliveEnable(int sockfd)
 	if(setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, optlen) < 0)
 	{
 		perror("keepAliveEnable()");
+#ifdef __linux__
 		close(sockfd);
+#else
+		closesocket(sockfd);
+#endif
 		exit(EXIT_FAILURE);
 	}
 }

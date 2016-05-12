@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 IF (WIN32)
 
-set(OpenCV_DIR C:/opencv/opencv/build)
+set(OpenCV_DIR E:/opencv/build_15)
 set(OpenCV_INCLUDES ${OpenCV_DIR}/include)
 
 endif(WIN32)

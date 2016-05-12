@@ -381,7 +381,7 @@ void deinit()
 	video.deinit();
 	destroyAllWindows();
 	syst.setExitState();
-	sleep(1);
+	//sleep(1);
 	exit(EXIT_SUCCESS);
 }
 

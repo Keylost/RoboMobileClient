@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
 #include <opencv2/opencv.hpp>
-#include <pthread.h>
-#include <unistd.h>
+//#include <unistd.h>
+#include <thread>
+#include <mutex>
+#include <chrono>
 
 using namespace std;
 using namespace cv;
@@ -12,7 +14,7 @@ class Object
 {
 	public:
 	T *obj;
-	pthread_mutex_t useLock;
+	mutex useLock;
 	int useCount;
 	
 	Object();
@@ -26,7 +28,7 @@ class Object
 template<typename T>
 class Queue
 {
-	pthread_mutex_t _lock;
+	mutex _lock;
 	Object<T> *_obj;
 	
 	public:
