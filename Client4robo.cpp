@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		else if(c==117) //take screenshot u
 		{
 			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", (long unsigned)time(NULL));
-			if(imwrite(screenshot_name, img))
+			if(imwrite(screenshot_name, window))
 			{
 				printf("[I]: screenshot %s saved\n", screenshot_name);
 			}
