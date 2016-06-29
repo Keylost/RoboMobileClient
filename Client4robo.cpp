@@ -26,8 +26,6 @@ Mat giveway,mainroad;
 Mat window;
 Mat wroi; //область изображения на window
 Mat panel; //область панели информации на window
-Rect signarea;
-Rect linearea;
 Mat img_clear;
 line_data myline;
 vector<sign_data> mysigns;
@@ -138,7 +136,7 @@ void show_telemetry(Mat &image)
 		memset(panel_row,255,panel.cols*3);
 	}
 	
-	rectangle(image, signarea, Scalar(255,0,0), 2, 8);//sign area
+	rectangle(image, syst.signarea, Scalar(255,0,0), 2, 8);//sign area
 	
 	Scalar color= CV_RGB(255,0,0);
 	double size =1.1;
@@ -282,24 +280,19 @@ void init()
 {
 	client = new Client(syst);
 	
-	printf("Connecting to %s:%d...\n",syst.host, syst.portno);
+	printf("[I]: Connecting to %s:%d...\n",syst.host, syst.portno);
 	
 	if(!client->connect())
 	{
+		printf("[E]: Connection failed.\n");
 		error("Can't connect to server.");
 	}
+	printf("Connection was successfully established!\n");	
 	
-	client->get_data(&width, 2);
-	client->get_data(&height, 2);
+	width = syst.capture_width;
+	height = syst.capture_height;
 	
-	client->get_data(&signarea,sizeof(Rect));
-	client->get_data(&linearea,sizeof(Rect));
-	
-	printf("Connection was successfully established!\n");
 	printf("Resolution: %dx%d\n",width,height);
-	
-	syst.capture_height = height;
-	syst.capture_width = width;
 	
 	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255)); //init main window
 	wroi = window(Rect(Point(0,0),Point(width,height)));

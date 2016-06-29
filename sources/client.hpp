@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <sys/select.h>
 #else
 #include <windows.h>
 typedef int socklen_t;
@@ -28,12 +29,14 @@ class Client
 	struct sockaddr_in serv_addr;
 	struct hostent *server;
 	int sockfd;
+	bool connectState;
 	
 	public:
 	Client(System &conf);
 	void get_data(void *dst, size_t size);
 	void send_data(void *src, size_t size);
 	bool connect();
+	bool isConnect();
 	void disconnect();
 };
 

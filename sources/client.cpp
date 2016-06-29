@@ -19,7 +19,13 @@ void keepAliveEnable(int sockfd)
 
 Client::Client(System &conf)
 {
+	connectState = false;
 	syst = &conf;
+}
+
+bool Client::isConnect()
+{
+	return connectState;
 }
 
 bool Client::connect()
@@ -55,8 +61,8 @@ bool Client::connect()
 	socklen_t savedtv_size = sizeof(savedtv);
 	//save timeout                                                                            
 	getsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,&savedtv_size);
-	//set 4 second timeout
-	tv.tv_sec=4; tv.tv_usec=0;
+	//set 1 second timeout
+	tv.tv_sec=1; tv.tv_usec=0;
 	if (setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&tv,tvsz)<0)
 	{
 		perror("setsockopt ");
@@ -74,12 +80,18 @@ bool Client::connect()
 		return false;
 	}
 	//reset timeouts                                                                             
-	setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
-	setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
+	//setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
+	//setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
 	
 	keepAliveEnable(sockfd);
 	
-	return true;
+	get_data(&(syst->capture_width), 2);
+	get_data(&(syst->capture_height), 2);
+	get_data(&(syst->signarea),sizeof(Rect));
+	get_data(&(syst->linearea),sizeof(Rect));
+	
+	connectState = true;
+	return connectState;
 }
 
 void Client::disconnect()
@@ -93,6 +105,8 @@ void Client::disconnect()
 
 void Client::get_data(void *dst, size_t size)
 {
+	
+	
 	size_t i=0;
 	int bytes =0;
 	for (i = 0; i < size; i += bytes) 
@@ -126,6 +140,7 @@ void Client::send_data(void *src,size_t size)
 
 void client_fnc(System &syst,Client &client)
 {
+	
 	Queue<Mat> &iqueue = syst.iqueue;
 	
 	vector<sign_data> locale;
@@ -135,6 +150,11 @@ void client_fnc(System &syst,Client &client)
 	uint32_t dataSize=0;
 	
 	vector<uchar> b; //vector for image
+	
+	while(!client.isConnect())
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(30));
+	}
 	
 	while(1)
 	{

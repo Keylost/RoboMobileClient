@@ -27,6 +27,8 @@ class System
 		int32_t capture_width;
 		int32_t capture_height;
 		bool exitState;
+		Rect signarea;
+		Rect linearea;
 		
 		/*
 		 * Очередь полученных с сервера кадров
