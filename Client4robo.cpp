@@ -206,39 +206,35 @@ void show_telemetry(Mat &image)
 				yindent += giveway.rows;
 				giveway.copyTo(ROI);
 				break;
-			case sign_trafficlight:
+			case sign_trafficlight_red:
 				xindent = (panel.cols - green_light.cols)/2;
 				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
 				yindent += green_light.rows;
-				
-				if(mysigns[i].state==greenlight)
-				{
-					green_light.copyTo(ROI);				
-				}
-				else if(mysigns[i].state==redlight)
-				{
-					red_light.copyTo(ROI);
-				}
-				else if(mysigns[i].state==yellowlight)
-				{
-					yellow_light.copyTo(ROI);
-				}
-				else printf("Sign state data corrupted\n");
+				red_light.copyTo(ROI);
 				break;
-			case sign_starttrafficlight:
+			case sign_trafficlight_yellow:
+				xindent = (panel.cols - green_light.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
+				yindent += green_light.rows;
+				yellow_light.copyTo(ROI);
+				break;
+			case sign_trafficlight_green:
+				xindent = (panel.cols - green_light.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
+				yindent += green_light.rows;
+				green_light.copyTo(ROI);
+				break;
+			case sign_starttrafficlight_red:
 				xindent = (panel.cols - start_greenlight.cols)/2;
 				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+start_greenlight.cols,yindent+start_greenlight.rows)));
 				yindent += start_greenlight.rows;
-				
-				if(mysigns[i].state==greenlight)
-				{
-					start_greenlight.copyTo(ROI);				
-				}
-				else if(mysigns[i].state==redlight)
-				{
-					start_redlight.copyTo(ROI);
-				}
-				else printf("Sign state data corrupted\n");
+				start_redlight.copyTo(ROI);
+				break;
+			case sign_starttrafficlight_green:
+				xindent = (panel.cols - start_greenlight.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+start_greenlight.cols,yindent+start_greenlight.rows)));
+				yindent += start_greenlight.rows;
+				start_greenlight.copyTo(ROI);
 				break;
 			default:
 				break;
