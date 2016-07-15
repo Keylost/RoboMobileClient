@@ -6,11 +6,12 @@
 #include <opencv2/opencv.hpp>
 #include <ctime>
 #include "videomaker.hpp"
-#include "telemetry.hpp"
+#include "Engine.hpp"
 #include "signs.hpp"
 #include "config.hpp"
 #include "CLP.hpp"
 #include <string>
+#include <thread>
 
 #ifdef _MSC_VER
 #define snprintf _snprintf_s 
@@ -20,59 +21,57 @@ using namespace std;
 using namespace cv;
 
 Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
+Mat start_greenlight, start_redlight;
 Mat giveway,mainroad;
 Mat window;
 Mat wroi; //область изображения на window
 Mat panel; //область панели информации на window
-Rect signarea;
-Rect linearea;
-Mat img;
 Mat img_clear;
+line_data myline;
+vector<sign_data> mysigns;
+Engine engine;
 
 System syst;
 int bordersize =100;
 char screenshot_name[16];
 VideoMaker video;
 
-Telemetry tel_data;
 int power_val = 1;
 Client *client;
 uint32_t imgsize = 0;
 uint16_t width=0; //Resolution
 uint16_t height=0;
-vector<uchar> b; //vector for image
 
 void error(const char* message); //error function
-void show_telemetry(Mat &image,Telemetry &tel_data);
+void show_telemetry(Mat &image);
 void Power_switcher(int pos, void *ptr);
 void init();
 void deinit();
 
 int main(int argc, char *argv[])
 {
+	Object<Mat> *curObj = NULL;
+	Queue<Mat> &queue = syst.iqueue;
+	
 	CLP::parse(argc, argv, syst);
 	init();
+	/*Создает поток приема данных от сервера*/
+	thread thr(client_fnc,ref(syst),ref(*client));
+	thr.detach();
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
-	//printf("Press u to take screenshot\n");
+	printf("Press u to take screenshot\n");
 		
 	while(true)
 	{
-		if(!client->get_data(&tel_data,sizeof(Telemetry)))
-		{
-			error("Getting data error");
-		}
-		client->get_data(&imgsize, 4);
-		
-		b = vector<uchar>(imgsize);
-		client->get_data(&b[0], imgsize);
-		img = imdecode(b,1);
+		curObj = queue.waitForNewObject(curObj);
+		Mat &img = *(curObj->obj);
 		
 		if(syst.clear_video)
 		{
 			img.copyTo(img_clear);
 		}
 		
-		show_telemetry(img,tel_data);
+		show_telemetry(img);
 		
 		if(syst.videomaker)
 		{
@@ -82,11 +81,14 @@ int main(int argc, char *argv[])
 		imshow("Stream", window);
 		
 		int c = waitKey(1);
-		if(c==27) break;
+		if(c==27)
+		{
+			break;
+		}
 		else if(c==117) //take screenshot u
 		{
-			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", time(NULL));
-			if(imwrite(screenshot_name, img))
+			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", (long unsigned)time(NULL));
+			if(imwrite(screenshot_name, window))
 			{
 				printf("[I]: screenshot %s saved\n", screenshot_name);
 			}
@@ -95,7 +97,8 @@ int main(int argc, char *argv[])
 				printf("[I]: screenshot cant't be saved. No access/No codecs\n");
 			}
 		}
-		b.clear();	
+		
+		curObj->free();
 	}
 
 	deinit();
@@ -119,10 +122,12 @@ int main(int argc, char *argv[])
 
 
 
-void show_telemetry(Mat &image,Telemetry &tel_data)
+void show_telemetry(Mat &image)
 {
-	//printf("%d %d %d\n",tel_data.speed,tel_data.direction,tel_data.angle);
 	//create window//
+	syst.line_get(myline);
+	syst.signs_get(mysigns);
+	syst.engine_get(engine);
 	
 	uint8_t *panel_row;
 	for(int i=0;i<panel.rows;i++)
@@ -131,100 +136,126 @@ void show_telemetry(Mat &image,Telemetry &tel_data)
 		memset(panel_row,255,panel.cols*3);
 	}
 	
-	rectangle(image, signarea, Scalar(255,0,0), 2, 8);//sign area
+	rectangle(image, syst.signarea, Scalar(255,0,0), 2, 8);//sign area
 	
 	Scalar color= CV_RGB(255,0,0);
 	double size =1.1;
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "Speed");
-	putText(panel, string(buffer), Point(5, height-140), FONT_HERSHEY_COMPLEX_SMALL, size, color);
-	snprintf(buffer, sizeof(buffer), "%.2fm/s",tel_data.real_speed/100.0);
-	putText(panel, string(buffer), Point(5, height-120), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
+	putText(panel, string(buffer), Point(5, height-100), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	snprintf(buffer, sizeof(buffer), "%.2fm/s",engine.real_speed/100.0);
+	putText(panel, string(buffer), Point(5, height-80), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
 	
 	snprintf(buffer, sizeof(buffer), "Power");
 	putText(panel, string(buffer), Point(5, height-30), FONT_HERSHEY_COMPLEX_SMALL, size, color);
-	snprintf(buffer, sizeof(buffer), "%d %%",tel_data.speed/10);
+	snprintf(buffer, sizeof(buffer), "%d %%",engine.speed/10);
 	putText(panel, string(buffer), Point(20, height-10), FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
-	circle(panel,Point(panel.cols/2,height-80),16,Scalar(0,0,250),1,8);
-	if(tel_data.speed != 0)
+	circle(panel,Point(panel.cols/2,height-60),11,Scalar(0,0,250),1,8);
+	if(engine.speed != 0)
 	{
-		if(tel_data.direction==1)
+		if(engine.direction==1)
 		{
-			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,250,0),CV_FILLED,8);
+			circle(panel,Point(panel.cols/2,height-60),10,Scalar(0,250,0),CV_FILLED,8);
 		}
 		else
 		{
-			circle(panel,Point(panel.cols/2,height-80),15,Scalar(0,0,250),CV_FILLED,8);
+			circle(panel,Point(panel.cols/2,height-60),10,Scalar(0,0,250),CV_FILLED,8);
 		}
 	}
 		
 	Mat ROI;
 	int xindent;
-	int yindent = 10;
-	switch(tel_data.mysign.sign)
-	{		
-		case sign_none:
-			break;
-		case sign_crosswalk:
-			xindent = (panel.cols - crosswalk.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
-			crosswalk.copyTo(ROI);			
-			break;
-		case sign_stop:
-			xindent = (panel.cols - stop.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
-			stop.copyTo(ROI);
-			break;
-		case sign_mainroad:
-			xindent = (panel.cols - mainroad.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
-			mainroad.copyTo(ROI);
-			break;
-		case sign_giveway:
-			xindent = (panel.cols - giveway.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
-			giveway.copyTo(ROI);
-			break;
-		case sign_trafficlight:
-			xindent = (panel.cols - green_light.cols)/2;
-			ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
-			
-			if(tel_data.mysign.state==greenlight)
-			{
-				green_light.copyTo(ROI);				
-			}
-			else if(tel_data.mysign.state==redlight)
-			{
-				red_light.copyTo(ROI);
-			}
-			else if(tel_data.mysign.state==yellowlight)
-			{
-				yellow_light.copyTo(ROI);
-			}
-			else printf("Sign state data corrupted\n");
-			break;
-		default:
-			break;
+	int yindent = 0;
+	
+	/* Отсортировать знаки по времени обнаружения
+	std::sort(mysigns.begin(), mysigns.end(), [](const sign_data& a, const sign_data& b)
+	{
+		return a.detect_time < b.detect_time;
+	});*/
+	for(unsigned i=0;i<mysigns.size();i++)
+	{
+		yindent += 10;
+		//проверить выход за границы области рисования знаков
+		if(yindent>=200) break;
+		switch(mysigns[i].sign)
+		{
+			case sign_none:
+				break;
+			case sign_crosswalk:
+				xindent = (panel.cols - crosswalk.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
+				yindent += crosswalk.rows;
+				crosswalk.copyTo(ROI);			
+				break;
+			case sign_stop:
+				xindent = (panel.cols - stop.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				yindent += stop.rows;
+				stop.copyTo(ROI);
+				break;
+			case sign_mainroad:
+				xindent = (panel.cols - mainroad.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+mainroad.rows)));
+				yindent += mainroad.rows;
+				mainroad.copyTo(ROI);
+				break;
+			case sign_giveway:
+				xindent = (panel.cols - giveway.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+giveway.rows)));
+				yindent += giveway.rows;
+				giveway.copyTo(ROI);
+				break;
+			case sign_trafficlight:
+				xindent = (panel.cols - green_light.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
+				yindent += green_light.rows;
+				
+				if(mysigns[i].state==greenlight)
+				{
+					green_light.copyTo(ROI);				
+				}
+				else if(mysigns[i].state==redlight)
+				{
+					red_light.copyTo(ROI);
+				}
+				else if(mysigns[i].state==yellowlight)
+				{
+					yellow_light.copyTo(ROI);
+				}
+				else printf("Sign state data corrupted\n");
+				break;
+			case sign_starttrafficlight:
+				xindent = (panel.cols - start_greenlight.cols)/2;
+				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+start_greenlight.cols,yindent+start_greenlight.rows)));
+				yindent += start_greenlight.rows;
+				
+				if(mysigns[i].state==greenlight)
+				{
+					start_greenlight.copyTo(ROI);				
+				}
+				else if(mysigns[i].state==redlight)
+				{
+					start_redlight.copyTo(ROI);
+				}
+				else printf("Sign state data corrupted\n");
+				break;
+			default:
+				break;
+		}
+		
+		int fx = width/2 + mysigns[i].area.x;
+		int fy = 0 + mysigns[i].area.y;
+		int ex = fx + mysigns[i].area.width;
+		int ey = fy + mysigns[i].area.height;
+		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);	
 	}
 	
-	//EXPERIMENTAL AREA//
-	if(tel_data.mysign.sign==sign_mainroad || tel_data.mysign.sign == sign_giveway)
+	if(myline.on_line)
 	{
-		int fx = width/2 + tel_data.mysign.area.x;
-		int fy = 0 + tel_data.mysign.area.y;
-		int ex = fx + tel_data.mysign.area.width;
-		int ey = fy + tel_data.mysign.area.height;
-		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);
-	}
-	//EXPERIMENTAL AREA//
-	
-	
-	if(tel_data.myline.on_line)
-	{
-		rectangle(image,Point(tel_data.myline.robot_center-5,height-60),Point(tel_data.myline.robot_center+5,height-1),Scalar(255,255,255), CV_FILLED, 8);
-		rectangle(image,Point(tel_data.myline.robot_center-5,height-60),Point(tel_data.myline.robot_center+5,height-1),Scalar(255,0,0), 1, 8);
-		rectangle(image,Point(tel_data.myline.center_of_line-5,height-60),Point(tel_data.myline.center_of_line+5,height-1),Scalar(0,255,0), CV_FILLED, 8);	
+		rectangle(image,Point(myline.robot_center-5,height-60),Point(myline.robot_center+5,height-1),Scalar(255,255,255), CV_FILLED, 8);
+		rectangle(image,Point(myline.robot_center-5,height-60),Point(myline.robot_center+5,height-1),Scalar(255,0,0), 1, 8);
+		rectangle(image,Point(myline.center_of_line-5,height-60),Point(myline.center_of_line+5,height-1),Scalar(0,255,0), CV_FILLED, 8);	
 	}
 	else
 	{
@@ -249,25 +280,19 @@ void init()
 {
 	client = new Client(syst);
 	
-	printf("Connecting to %s:%d...\n",syst.host, syst.portno);
+	printf("[I]: Connecting to %s:%d...\n",syst.host, syst.portno);
 	
 	if(!client->connect())
 	{
-			
+		printf("[E]: Connection failed.\n");
 		error("Can't connect to server.");
 	}
+	printf("Connection was successfully established!\n");	
 	
-	client->get_data(&width, 2);
-	client->get_data(&height, 2);
+	width = syst.capture_width;
+	height = syst.capture_height;
 	
-	client->get_data(&signarea,sizeof(Rect));
-	client->get_data(&linearea,sizeof(Rect));
-	
-	printf("Connection was successfully established!\n");
 	printf("Resolution: %dx%d\n",width,height);
-	
-	syst.capture_height = height;
-	syst.capture_width = width;
 	
 	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255)); //init main window
 	wroi = window(Rect(Point(0,0),Point(width,height)));
@@ -275,14 +300,45 @@ void init()
 	
 	namedWindow("Stream", WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //create main window
 	
+	double signHeight = 50;
+	Size newSignSize;
+	newSignSize.height = (int)signHeight;
 	crosswalk = imread("../img/crosswalk.jpeg",1);
+	newSignSize.width = (int)(crosswalk.cols/(crosswalk.rows/signHeight));
+	resize(crosswalk,crosswalk,newSignSize);
+	
 	stop = imread("../img/stop.jpeg",1);
+	newSignSize.width = (int)(stop.cols/(stop.rows/signHeight));
+	resize(stop,stop,newSignSize);
+	
 	green_light = imread("../img/green_light_s.jpg",1);
+	newSignSize.width = (int)(green_light.cols/(green_light.rows/signHeight));
+	resize(green_light,green_light,newSignSize);
+	
 	red_light = imread("../img/red_light_s.jpg",1);
+	newSignSize.width = (int)(red_light.cols/(red_light.rows/signHeight));
+	resize(red_light,red_light,newSignSize);
+	
 	yellow_light = imread("../img/yellow_light_s.jpg",1);
+	newSignSize.width = (int)(yellow_light.cols/(yellow_light.rows/signHeight));
+	resize(yellow_light,yellow_light,newSignSize);
+	
+	start_greenlight = imread("../img/st_green_light_s.jpg",1);
+	newSignSize.width = (int)(start_greenlight.cols/(start_greenlight.rows/signHeight));
+	resize(start_greenlight,start_greenlight,newSignSize);
+	
+	start_redlight = imread("../img/st_red_light_s.jpg",1);
+	newSignSize.width = (int)(start_redlight.cols/(start_redlight.rows/signHeight));
+	resize(start_redlight,start_redlight,newSignSize);	
+	
 	no_line = imread("../img/no_line.png",1);
 	giveway = imread("../img/ustupi.jpg",1);
+	newSignSize.width = (int)(giveway.cols/(giveway.rows/signHeight));
+	resize(giveway,giveway,newSignSize);
+	
 	mainroad = imread("../img/glavnaya.jpg",1);
+	newSignSize.width = (int)(mainroad.cols/(mainroad.rows/signHeight));
+	resize(mainroad,mainroad,newSignSize);	
 	
 	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
 	{
@@ -317,7 +373,9 @@ void deinit()
 {
 	video.deinit();
 	destroyAllWindows();
-	client->disconnect();
+	syst.setExitState();
+	//sleep(1);
+	exit(EXIT_SUCCESS);
 }
 
 void error(const char* message)

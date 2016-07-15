@@ -10,7 +10,8 @@ enum signs
 	sign_crosswalk 	   = 2,
 	sign_trafficlight  = 3,
 	sign_mainroad      = 4,
-	sign_giveway       = 5
+	sign_giveway       = 5,
+	sign_starttrafficlight = 6
 };
 
 enum trafficlight_states
@@ -24,7 +25,8 @@ struct sign_data
 {
 	Rect area;
 	signs sign;
-	int state;
+	uint32_t state;
+	uint32_t detect_time; //время прошедшее с поледне регистрации знака системой
 };
 
 struct line_data

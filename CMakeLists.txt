@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 IF (WIN32)
 
-set(OpenCV_DIR C:/opencv/opencv/build)
+set(OpenCV_DIR E:/opencv/build_15)
 set(OpenCV_INCLUDES ${OpenCV_DIR}/include)
 
 endif(WIN32)
@@ -12,7 +12,7 @@ project(${PROJECT})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 # 	add_definitions(-g)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -pthread")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
