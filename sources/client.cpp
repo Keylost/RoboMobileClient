@@ -1,5 +1,7 @@
 #include "client.hpp"
 
+using namespace cv;
+
 /* поддерживать соединение с другой стороной */
 void keepAliveEnable(int sockfd)
 {

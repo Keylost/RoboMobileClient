@@ -3,18 +3,18 @@
 #include <opencv2/opencv.hpp>
 #include "config.hpp"
 
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 class VideoMaker
 {
 private:
 	double fps;
-	Size size;	
-	VideoWriter output;
+	cv::Size size;	
+	cv::VideoWriter output;
 	bool iscolor;
 public:	
 	bool init(System &syst,int width,int height);
-	void write(Mat& frame);
+	void write(cv::Mat& frame);
 	void deinit();
 };

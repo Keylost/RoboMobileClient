@@ -18,15 +18,14 @@
 #endif
 
 using namespace std;
-using namespace cv;
 
-Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
-Mat start_greenlight, start_redlight;
-Mat giveway,mainroad;
-Mat window;
-Mat wroi; //область изображения на window
-Mat panel; //область панели информации на window
-Mat img_clear;
+cv::Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
+cv::Mat start_greenlight, start_redlight;
+cv::Mat giveway,mainroad;
+cv::Mat window;
+cv::Mat wroi; //область изображения на window
+cv::Mat panel; //область панели информации на window
+cv::Mat img_clear;
 line_data myline;
 vector<sign_data> mysigns;
 Engine engine;
@@ -43,15 +42,15 @@ uint16_t width=0; //Resolution
 uint16_t height=0;
 
 void error(const char* message); //error function
-void show_telemetry(Mat &image);
+void show_telemetry(cv::Mat &image);
 void Power_switcher(int pos, void *ptr);
 void init();
 void deinit();
 
 int main(int argc, char *argv[])
 {
-	Object<Mat> *curObj = NULL;
-	Queue<Mat> &queue = syst.iqueue;
+	Object<cv::Mat> *curObj = NULL;
+	Queue<cv::Mat> &queue = syst.iqueue;
 	
 	CLP::parse(argc, argv, syst);
 	init();
@@ -64,7 +63,7 @@ int main(int argc, char *argv[])
 	while(true)
 	{
 		curObj = queue.waitForNewObject(curObj);
-		Mat &img = *(curObj->obj);
+		cv::Mat &img = *(curObj->obj);
 		
 		if(syst.clear_video)
 		{
@@ -78,9 +77,9 @@ int main(int argc, char *argv[])
 			if(syst.clear_video) video.write(img_clear);
 			else video.write(window);
 		}
-		imshow("Stream", window);
+		cv::imshow("Stream", window);
 		
-		int c = waitKey(1);
+		int c = cv::waitKey(1);
 		if(c==27)
 		{
 			break;
@@ -122,7 +121,7 @@ int main(int argc, char *argv[])
 
 
 
-void show_telemetry(Mat &image)
+void show_telemetry(cv::Mat &image)
 {
 	//create window//
 	syst.line_get(myline);
@@ -136,35 +135,35 @@ void show_telemetry(Mat &image)
 		memset(panel_row,255,panel.cols*3);
 	}
 	
-	rectangle(image, syst.signarea, Scalar(255,0,0), 2, 8);//sign area
+	cv::rectangle(image, syst.signarea, cv::Scalar(255,0,0), 2, 8);//sign area
 	
-	Scalar color= CV_RGB(255,0,0);
+	cv::Scalar color= CV_RGB(255,0,0);
 	double size =1.1;
 	char buffer[256];
 	snprintf(buffer, sizeof(buffer), "Speed");
-	putText(panel, string(buffer), Point(5, height-100), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	cv::putText(panel, string(buffer), cv::Point(5, height-100), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	snprintf(buffer, sizeof(buffer), "%.2fm/s",engine.real_speed/100.0);
-	putText(panel, string(buffer), Point(5, height-80), FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
+	cv::putText(panel, string(buffer), cv::Point(5, height-80), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
 	
 	snprintf(buffer, sizeof(buffer), "Power");
-	putText(panel, string(buffer), Point(5, height-30), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	cv::putText(panel, string(buffer), cv::Point(5, height-30), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	snprintf(buffer, sizeof(buffer), "%d %%",engine.speed/10);
-	putText(panel, string(buffer), Point(20, height-10), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	cv::putText(panel, string(buffer), cv::Point(20, height-10), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
-	circle(panel,Point(panel.cols/2,height-60),11,Scalar(0,0,250),1,8);
+	cv::circle(panel,cv::Point(panel.cols/2,height-60),11,cv::Scalar(0,0,250),1,8);
 	if(engine.speed != 0)
 	{
 		if(engine.direction==1)
 		{
-			circle(panel,Point(panel.cols/2,height-60),10,Scalar(0,250,0),CV_FILLED,8);
+			cv::circle(panel,cv::Point(panel.cols/2,height-60),10,cv::Scalar(0,250,0),CV_FILLED,8);
 		}
 		else
 		{
-			circle(panel,Point(panel.cols/2,height-60),10,Scalar(0,0,250),CV_FILLED,8);
+			cv::circle(panel,cv::Point(panel.cols/2,height-60),10,cv::Scalar(0,0,250),CV_FILLED,8);
 		}
 	}
 		
-	Mat ROI;
+	cv::Mat ROI;
 	int xindent;
 	int yindent = 0;
 	
@@ -184,31 +183,31 @@ void show_telemetry(Mat &image)
 				break;
 			case sign_crosswalk:
 				xindent = (panel.cols - crosswalk.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+crosswalk.cols,yindent+crosswalk.rows)));
 				yindent += crosswalk.rows;
 				crosswalk.copyTo(ROI);			
 				break;
 			case sign_stop:
 				xindent = (panel.cols - stop.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+stop.rows)));
 				yindent += stop.rows;
 				stop.copyTo(ROI);
 				break;
 			case sign_mainroad:
 				xindent = (panel.cols - mainroad.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+mainroad.rows)));
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+mainroad.rows)));
 				yindent += mainroad.rows;
 				mainroad.copyTo(ROI);
 				break;
 			case sign_giveway:
 				xindent = (panel.cols - giveway.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+giveway.rows)));
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+stop.cols,yindent+giveway.rows)));
 				yindent += giveway.rows;
 				giveway.copyTo(ROI);
 				break;
 			case sign_trafficlight:
 				xindent = (panel.cols - green_light.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+green_light.cols,yindent+green_light.rows)));
 				yindent += green_light.rows;
 				
 				if(mysigns[i].state==greenlight)
@@ -227,7 +226,7 @@ void show_telemetry(Mat &image)
 				break;
 			case sign_starttrafficlight:
 				xindent = (panel.cols - start_greenlight.cols)/2;
-				ROI = panel(Rect(cv::Point(xindent,yindent), cv::Point(xindent+start_greenlight.cols,yindent+start_greenlight.rows)));
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+start_greenlight.cols,yindent+start_greenlight.rows)));
 				yindent += start_greenlight.rows;
 				
 				if(mysigns[i].state==greenlight)
@@ -248,18 +247,18 @@ void show_telemetry(Mat &image)
 		int fy = 0 + mysigns[i].area.y;
 		int ex = fx + mysigns[i].area.width;
 		int ey = fy + mysigns[i].area.height;
-		rectangle(image,Point(fx,fy),Point(ex,ey),Scalar(0,255,0), 4, 8);	
+		cv::rectangle(image,cv::Point(fx,fy),cv::Point(ex,ey),cv::Scalar(0,255,0), 4, 8);	
 	}
 	
 	if(myline.on_line)
 	{
-		rectangle(image,Point(myline.robot_center-5,height-60),Point(myline.robot_center+5,height-1),Scalar(255,255,255), CV_FILLED, 8);
-		rectangle(image,Point(myline.robot_center-5,height-60),Point(myline.robot_center+5,height-1),Scalar(255,0,0), 1, 8);
-		rectangle(image,Point(myline.center_of_line-5,height-60),Point(myline.center_of_line+5,height-1),Scalar(0,255,0), CV_FILLED, 8);	
+		cv::rectangle(image,cv::Point(myline.robot_center-5,height-60),cv::Point(myline.robot_center+5,height-1),cv::Scalar(255,255,255), CV_FILLED, 8);
+		cv::rectangle(image,cv::Point(myline.robot_center-5,height-60),cv::Point(myline.robot_center+5,height-1),cv::Scalar(255,0,0), 1, 8);
+		cv::rectangle(image,cv::Point(myline.center_of_line-5,height-60),cv::Point(myline.center_of_line+5,height-1),cv::Scalar(0,255,0), CV_FILLED, 8);	
 	}
 	else
 	{
-		ROI = image(Rect(cv::Point(image.cols/2+no_line.cols/2,image.rows-10), cv::Point(image.cols/2-(no_line.cols-no_line.cols/2),image.rows-no_line.rows-10)));
+		ROI = image(cv::Rect(cv::Point(image.cols/2+no_line.cols/2,image.rows-10), cv::Point(image.cols/2-(no_line.cols-no_line.cols/2),image.rows-no_line.rows-10)));
 		no_line.copyTo(ROI);	
 	}
 	
@@ -294,51 +293,51 @@ void init()
 	
 	printf("Resolution: %dx%d\n",width,height);
 	
-	window = Mat(height,width+bordersize,CV_8UC3,Scalar(255,255,255)); //init main window
-	wroi = window(Rect(Point(0,0),Point(width,height)));
-	panel = window(Rect(Point(width-1,0),Point(width+bordersize-1,height-1)));
+	window = cv::Mat(height,width+bordersize,CV_8UC3,cv::Scalar(255,255,255)); //init main window
+	wroi = window(cv::Rect(cv::Point(0,0),cv::Point(width,height)));
+	panel = window(cv::Rect(cv::Point(width-1,0),cv::Point(width+bordersize-1,height-1)));
 	
-	namedWindow("Stream", WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //create main window
+	cv::namedWindow("Stream", cv::WINDOW_NORMAL | CV_WINDOW_KEEPRATIO /*| WINDOW_OPENGL*/); //create main window
 	
 	double signHeight = 50;
-	Size newSignSize;
+	cv::Size newSignSize;
 	newSignSize.height = (int)signHeight;
-	crosswalk = imread("../img/crosswalk.jpeg",1);
+	crosswalk = cv::imread("../img/crosswalk.jpeg",1);
 	newSignSize.width = (int)(crosswalk.cols/(crosswalk.rows/signHeight));
-	resize(crosswalk,crosswalk,newSignSize);
+	cv::resize(crosswalk,crosswalk,newSignSize);
 	
-	stop = imread("../img/stop.jpeg",1);
+	stop = cv::imread("../img/stop.jpeg",1);
 	newSignSize.width = (int)(stop.cols/(stop.rows/signHeight));
-	resize(stop,stop,newSignSize);
+	cv::resize(stop,stop,newSignSize);
 	
-	green_light = imread("../img/green_light_s.jpg",1);
+	green_light = cv::imread("../img/green_light_s.jpg",1);
 	newSignSize.width = (int)(green_light.cols/(green_light.rows/signHeight));
-	resize(green_light,green_light,newSignSize);
+	cv::resize(green_light,green_light,newSignSize);
 	
-	red_light = imread("../img/red_light_s.jpg",1);
+	red_light = cv::imread("../img/red_light_s.jpg",1);
 	newSignSize.width = (int)(red_light.cols/(red_light.rows/signHeight));
-	resize(red_light,red_light,newSignSize);
+	cv::resize(red_light,red_light,newSignSize);
 	
-	yellow_light = imread("../img/yellow_light_s.jpg",1);
+	yellow_light = cv::imread("../img/yellow_light_s.jpg",1);
 	newSignSize.width = (int)(yellow_light.cols/(yellow_light.rows/signHeight));
 	resize(yellow_light,yellow_light,newSignSize);
 	
-	start_greenlight = imread("../img/st_green_light_s.jpg",1);
+	start_greenlight = cv::imread("../img/st_green_light_s.jpg",1);
 	newSignSize.width = (int)(start_greenlight.cols/(start_greenlight.rows/signHeight));
-	resize(start_greenlight,start_greenlight,newSignSize);
+	cv::resize(start_greenlight,start_greenlight,newSignSize);
 	
-	start_redlight = imread("../img/st_red_light_s.jpg",1);
+	start_redlight = cv::imread("../img/st_red_light_s.jpg",1);
 	newSignSize.width = (int)(start_redlight.cols/(start_redlight.rows/signHeight));
-	resize(start_redlight,start_redlight,newSignSize);	
+	cv::resize(start_redlight,start_redlight,newSignSize);	
 	
-	no_line = imread("../img/no_line.png",1);
-	giveway = imread("../img/ustupi.jpg",1);
+	no_line = cv::imread("../img/no_line.png",1);
+	giveway = cv::imread("../img/ustupi.jpg",1);
 	newSignSize.width = (int)(giveway.cols/(giveway.rows/signHeight));
-	resize(giveway,giveway,newSignSize);
+	cv::resize(giveway,giveway,newSignSize);
 	
-	mainroad = imread("../img/glavnaya.jpg",1);
+	mainroad = cv::imread("../img/glavnaya.jpg",1);
 	newSignSize.width = (int)(mainroad.cols/(mainroad.rows/signHeight));
-	resize(mainroad,mainroad,newSignSize);	
+	cv::resize(mainroad,mainroad,newSignSize);	
 	
 	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
 	{
@@ -372,7 +371,7 @@ void init()
 void deinit()
 {
 	video.deinit();
-	destroyAllWindows();
+	cv::destroyAllWindows();
 	syst.setExitState();
 	//sleep(1);
 	exit(EXIT_SUCCESS);
@@ -381,16 +380,16 @@ void deinit()
 void error(const char* message)
 {
 	char buffer[] = "Press any key to exit";
-	Mat error_img = Mat(80,500,CV_8UC3,Scalar(255,255,255));
-	Scalar color= CV_RGB(0,0,0);
+	cv::Mat error_img = cv::Mat(80,500,CV_8UC3,cv::Scalar(255,255,255));
+	cv::Scalar color= CV_RGB(0,0,0);
 	double size =1.0;
-	putText(error_img, string(message), Point(5, 30), FONT_HERSHEY_COMPLEX_SMALL, size, CV_RGB(200,0,0));
+	cv::putText(error_img, string(message), cv::Point(5, 30), cv::FONT_HERSHEY_COMPLEX_SMALL, size, cv::Scalar(0,0,200));
 	
-	putText(error_img, string(buffer), Point(5, 50), FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	cv::putText(error_img, string(buffer), cv::Point(5, 50), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
-	namedWindow("Error",WINDOW_AUTOSIZE); //create error window
-	imshow("Error",error_img);
-	waitKey(0);
+	cv::namedWindow("Error",cv::WINDOW_AUTOSIZE); //create error window
+	cv::imshow("Error",error_img);
+	cv::waitKey(0);
 	deinit();
 	exit(0);
 }

@@ -9,7 +9,7 @@
 #include "Engine.hpp"
 #include "signs.hpp"
 
-using namespace cv;
+//using namespace cv;
 using namespace std;
 
 
@@ -27,13 +27,13 @@ class System
 		int32_t capture_width;
 		int32_t capture_height;
 		bool exitState;
-		Rect signarea;
-		Rect linearea;
+		cv::Rect signarea;
+		cv::Rect linearea;
 		
 		/*
 		 * Очередь полученных с сервера кадров
 		 */
-		Queue<Mat> iqueue;
+		Queue<cv::Mat> iqueue;
 		
 		/*
 		 * Глобальная структура с текущими данными линии 

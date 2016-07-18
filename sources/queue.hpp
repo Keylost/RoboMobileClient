@@ -7,7 +7,7 @@
 #include <chrono>
 
 using namespace std;
-using namespace cv;
+//using namespace cv;
 
 template<typename T>
 class Object

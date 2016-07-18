@@ -1,5 +1,6 @@
 #include "videomaker.hpp"
 
+using namespace cv;
 
 bool VideoMaker::init(System &syst,int width,int height)
 {
