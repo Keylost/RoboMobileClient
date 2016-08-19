@@ -243,8 +243,8 @@ void show_telemetry(cv::Mat &image)
 				break;
 		}
 		
-		int fx = width/2 + mysigns[i].area.x;
-		int fy = 0 + mysigns[i].area.y;
+		int fx = syst.signarea.x + mysigns[i].area.x;
+		int fy = syst.signarea.y + mysigns[i].area.y;
 		int ex = fx + mysigns[i].area.width;
 		int ey = fy + mysigns[i].area.height;
 		cv::rectangle(image,cv::Point(fx,fy),cv::Point(ex,ey),cv::Scalar(0,255,0), 4, 8);	
