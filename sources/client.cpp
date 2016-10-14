@@ -64,7 +64,7 @@ bool Client::connect()
 	//save timeout                                                                            
 	getsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,&savedtv_size);
 	//set 1 second timeout
-	tv.tv_sec=1; tv.tv_usec=0;
+	tv.tv_sec=7; tv.tv_usec=0;
 	if (setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&tv,tvsz)<0)
 	{
 		perror("setsockopt ");
