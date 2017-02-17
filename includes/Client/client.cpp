@@ -1,6 +1,5 @@
 #include "client.hpp"
-
-using namespace cv;
+#include <iostream>
 
 /* поддерживать соединение с другой стороной */
 void keepAliveEnable(int sockfd)
@@ -89,8 +88,8 @@ bool Client::connect()
 	
 	get_data(&(syst->capture_width), 2);
 	get_data(&(syst->capture_height), 2);
-	get_data(&(syst->signarea),sizeof(Rect));
-	get_data(&(syst->linearea),sizeof(Rect));
+	get_data(&(syst->signarea),sizeof(MyRect));
+	get_data(&(syst->linearea),sizeof(MyRect));
 	
 	connectState = true;
 	return connectState;
@@ -143,15 +142,15 @@ void Client::send_data(void *src,size_t size)
 void client_fnc(System &syst,Client &client)
 {
 	
-	Queue<Mat> &iqueue = syst.iqueue;
+	Queue<std::vector<unsigned char>> &iqueue = syst.iqueue;
 	
-	vector<sign_data> locale;
+	std::vector<sign_data> locale;
 	sign_data sig;
 	
 	dataType tp;
 	uint32_t dataSize=0;
 	
-	vector<uchar> b; //vector for image
+	std::vector<unsigned char> b; //vector for image
 	
 	while(!client.isConnect())
 	{
@@ -168,12 +167,11 @@ void client_fnc(System &syst,Client &client)
 		{
 			case Image_t:
 			{
-				b = vector<uchar>(dataSize);
+				b.resize(dataSize);				
 				client.get_data(&b[0], (size_t)dataSize);
-				Object<Mat> *newObj = new Object<Mat>();
-				*(newObj->obj) = imdecode(b,1);
-				iqueue.push(newObj);
-				b.clear();
+				Object<std::vector<unsigned char>> *myObj = new Object<std::vector<unsigned char>>();				
+				*(myObj->obj) = b;
+				iqueue.push(myObj);
 				break;
 			}
 			case Line_t:

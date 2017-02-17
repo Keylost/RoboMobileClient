@@ -1,5 +1,4 @@
 #pragma once
-#include <opencv2/opencv.hpp>
 
 enum signs
 {
@@ -22,9 +21,17 @@ enum trafficlight_states
 	greenlight  = 2
 };
 
+struct MyRect
+{
+	uint32_t x;
+	uint32_t y;
+	uint32_t w;
+	uint32_t h;
+};
+
 struct sign_data
 {
-	cv::Rect area;
+	MyRect area;
 	signs sign;
 	uint32_t detect_time; //время прошедшее с поледне регистрации знака системой
 };

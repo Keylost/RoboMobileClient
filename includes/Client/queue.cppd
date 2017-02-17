@@ -34,6 +34,7 @@ Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj)
 			break;
 		}
 	}
+	
 	return curObj;
 }
 
@@ -55,7 +56,7 @@ void Object<T>::free()
 {
 	if(useCount==1)
 	{
-		delete this;
+		delete this;		
 		return;
 	}
 	useLock.lock();

@@ -1,44 +1,29 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required (VERSION 2.8)
 
-IF (WIN32)
-
-set(OpenCV_DIR E:/opencv/build_15)
-set(OpenCV_INCLUDES ${OpenCV_DIR}/include)
-
-endif(WIN32)
-
-set(PROJECT cl)
-project(${PROJECT})
+set(PROJECT Client)
+project (${PROJECT})
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 # 	add_definitions(-g)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -pthread")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-find_package(OpenCV)
+aux_source_directory(includes/GUI SOURCES)
+aux_source_directory(includes/Client SOURCES)
 
-aux_source_directory(sources SOURCES)
 set(SOURCES ${SOURCES}
-	Client4robo.cpp
+	main.cpp
 )
 
-include_directories(
-	sources
-	${OpenCV_INCLUDES}
-)
-
-# use, i.e. don't skip the full RPATH for the build tree
-SET(CMAKE_SKIP_BUILD_RPATH TRUE)
+find_package(SDL2 REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
 
 add_executable(${PROJECT} ${SOURCES})
 
 target_link_libraries(${PROJECT}
-	${OpenCV_LIBS} 
-	#pthread
+	${SDL2_LIBRARIES}
+	${OPENGL_LIBRARIES}
+	${GLEW_LIBRARIES}
 )
-
-IF (MSVC)
-set(CMAKE_CXX_FLAGS_RELEASE "/MT")
-set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
-endif(MSVC)

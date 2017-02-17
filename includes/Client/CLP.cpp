@@ -70,16 +70,7 @@ void CLP::parse(int argc, char **argv,System &syst)
 			break;
 		case 'c':
 			syst.clear_video = true;
-			break;
-		case 'v':
-			if (strlen(optarg) > 80)
-			{
-				printf("Too long file name\n");
-				exit(1);
-			}
-			syst.videomaker = true;
-			memcpy(syst.videoname, optarg, strlen(optarg)+1);
-			break;
+			break;		
 		default:
 			usage(argv[0]);
 			exit(1);
