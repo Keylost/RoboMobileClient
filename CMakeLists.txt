@@ -9,11 +9,15 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-aux_source_directory(includes/GUI SOURCES)
-aux_source_directory(includes/Client SOURCES)
+aux_source_directory(sources SOURCES)
 
 set(SOURCES ${SOURCES}
 	main.cpp
+)
+
+include_directories(
+	includes/GUI
+	includes/Client
 )
 
 find_package(SDL2 REQUIRED)
