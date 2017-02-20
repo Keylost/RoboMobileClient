@@ -2,21 +2,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include <ctime>
-#include <string>
 #include <thread>
 #include <vector>
-#include <iostream>
 
-#include "includes/GUI/guiFunctions.h"
-#include "includes/Client/client.hpp"
-#include "includes/Client/Engine.hpp"
-#include "includes/Client/signs.hpp"
-#include "includes/Client/config.hpp"
-#include "includes/Client/CLP.hpp"
+#include "CLP.hpp"
+#include "signs.hpp"
+#include "client.hpp"
+#include "config.hpp"
+#include "Engine.hpp"
+#include "guiFunctions.h"
 
 line_data myline;
-vector<sign_data> mysigns;
+std::vector<sign_data> mysigns;
 Engine engine;
 System syst;
 Client *client;
@@ -26,7 +23,7 @@ int main(int argc, char* argv[])
     /* GUI initialization */
 	Platform wi;
     struct nk_context* ctx;
-
+    
 	windowInitialization(&wi, "Client", WINDOW_WIDTH, WINDOW_HEIGHT);
 	ctx = ctxInitialization(&wi, WINDOW_WIDTH, WINDOW_HEIGHT);
 	loadDefaultFont(&wi);
@@ -42,7 +39,6 @@ int main(int argc, char* argv[])
     struct nk_image redLight = loadImageFromFile("../images/red_light.jpg");
 
     /* Client initialization */
-
     Object<std::vector<unsigned char>> *curObj = NULL;
     Queue<std::vector<unsigned char>> &queue = syst.iqueue;
     CLP::parse(argc, argv, syst);
@@ -51,10 +47,9 @@ int main(int argc, char* argv[])
 	
 	printf("[I]: Connecting to %s:%d...\n",syst.host, syst.portno);
 	
-	if(!client->connect())
-	{
+	if(!client->connect()) {
 		printf("[E]: Connection failed.\n");
-		printf("Can't connect to server.");
+		printf("Can't connect to server.\n");
         return 1;
 	}
 	printf("Connection was successfully established!\n");
@@ -62,7 +57,7 @@ int main(int argc, char* argv[])
     std::thread thr(client_fnc,ref(syst),ref(*client));
 	thr.detach();
 
-	while (true)
+	while (true) 
     {
         syst.line_get(myline);
 	    syst.signs_get(mysigns);
@@ -73,7 +68,7 @@ int main(int argc, char* argv[])
         unsigned char* buff = new unsigned char[curObj->obj->size()];
         for (int i = 0; i < curObj->obj->size(); ++i)
             buff[i] = (*(curObj->obj))[i];
-        streamImage = loadImageFromMemory(buff, sizeof(unsigned char) * curObj->obj->size());        
+        streamImage = loadStreamImageFromMemory(buff, sizeof(unsigned char) * curObj->obj->size(), myline, mysigns);        
         delete[] buff;
         
         /* Input */
@@ -89,19 +84,19 @@ int main(int argc, char* argv[])
         nk_input_end(ctx);
 
         /* GUI */
-        if (nk_begin(ctx, "Stream", nk_rect(0, 0, WINDOW_WIDTH - 300, WINDOW_HEIGHT), NK_WINDOW_TITLE))
+        if (nk_begin(ctx, "Stream", nk_rect(0, 0, WINDOW_WIDTH - 300, WINDOW_HEIGHT), NK_WINDOW_TITLE)) 
         {
             nk_layout_row_static(ctx, WINDOW_HEIGHT - 50, WINDOW_WIDTH - 322, 1);
             nk_image(ctx, streamImage);
         }
         nk_end(ctx);
 
-        if (nk_begin(ctx, "Info", nk_rect(WINDOW_WIDTH - 300, 0, 300, WINDOW_HEIGHT), NK_WINDOW_TITLE))
+        if (nk_begin(ctx, "Info", nk_rect(WINDOW_WIDTH - 300, 0, 300, WINDOW_HEIGHT), NK_WINDOW_TITLE)) 
         {
-            for (unsigned i = 0; i < mysigns.size(); ++i)
+            for (unsigned i = 0; i < mysigns.size(); ++i) 
             {
 		        switch (mysigns[i].sign)
-		        {
+                {
                     case sign_none:
                         break;
                     case sign_crosswalk:
@@ -143,10 +138,12 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        nk_end(ctx);   
+        nk_end(ctx);
 
-        curObj->free();     
 		render(&wi);
+
+        curObj->free();        
+        glDeleteTextures(1,(const GLuint*)&streamImage.handle.id);        
 	}
 
 	shutdown(&wi);

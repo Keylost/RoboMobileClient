@@ -7,9 +7,12 @@
 #define MAX_ELEMENT_MEMORY 128 * 1024
 
 #define NK_INCLUDE_FIXED_TYPES
-    #define NK_INCLUDE_STANDARD_IO
-    #define NK_INCLUDE_STANDARD_VARARGS
-    #define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+
+#include "signs.hpp"
+#include <vector>
 
 #if defined(WINDOWS)
     #define NK_GDIP_IMPLEMENTATION
@@ -182,8 +185,7 @@ static struct nk_image loadImageFromFile(const char *filename)
         GLuint tex;
 
         unsigned char *data = stbi_load(filename, &x, &y, &n, 4);
-        if (!data) 
-        {
+        if (!data) {
             fprintf(stdout, "[SDL]: failed to load image\n");
             exit(1);
         }
@@ -204,7 +206,7 @@ static struct nk_image loadImageFromFile(const char *filename)
 
 
 
-static struct nk_image loadImageFromMemory(const unsigned char* buf, int bufSize)
+struct nk_image loadImageFromMemory(const unsigned char* buf, int bufSize)
 {
     #if defined(WINDOWS)
         return nk_gdip_load_image_from_memory(buf, bufSize);
@@ -213,10 +215,72 @@ static struct nk_image loadImageFromMemory(const unsigned char* buf, int bufSize
         GLuint tex;
         
         unsigned char *data = stbi_load_from_memory(buf, bufSize, &x, &y, &n, 4);
-        if (!data) 
-        {
+        if (!data) {
             fprintf(stdout, "[SDL]: failed to load image\n");
             exit(1);
+        }
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        stbi_image_free(data);
+        return nk_image_id((int)tex);
+    #endif
+}
+
+
+
+void drawLine(unsigned char* data, int left, int top, int right, int bottom, int red, int green, int blue, int alpha = 255)
+{
+    int row, col, depth = 4;
+    for (row = top; row < bottom; row++) {
+        for (col = left; col < right; col++) {            
+            data[(row * 640 + col) * depth + 0] = red;
+            data[(row * 640 + col) * depth + 1] = green;
+            data[(row * 640 + col) * depth + 2] = blue;
+            data[(row * 640 + col) * depth + 3] = alpha;
+        }
+    }
+}
+struct nk_image loadStreamImageFromMemory(const unsigned char* buf, int bufSize, line_data& myline, std::vector<sign_data>& mysigns)
+{
+    #if defined(WINDOWS)
+        return nk_gdip_load_image_from_memory(buf, bufSize);
+    #else
+        int x, y, n;
+        GLuint tex;
+        
+        unsigned char *data = stbi_load_from_memory(buf, bufSize, &x, &y, &n, 4);
+        if (!data) {
+            fprintf(stdout, "[SDL]: failed to load image\n");
+            exit(1);
+        }
+
+        drawLine(data, myline.center_of_line - 5, 440, myline.center_of_line + 5, y, 0, 255, 0, 120);
+        drawLine(data, myline.robot_center - 5, 440, myline.robot_center + 5, y, 255, 255, 137, 0);
+
+        int left = 320, top = 200, right = 640, bottom = 350;
+        drawLine(data, left, top, right, top + 2, 222, 255, 0);
+        drawLine(data, left, bottom - 2, right, bottom, 222, 255, 0);
+        drawLine(data, left, top, left + 2, bottom, 222, 255, 0);
+        drawLine(data, right - 2, top, right, bottom, 222, 255, 0);
+
+        for (unsigned i = 0; i < mysigns.size(); ++i) {
+            left = 320 + mysigns[i].area.x;
+            top = 200 + mysigns[i].area.y;
+            right = left + mysigns[i].area.w;
+            bottom = top + mysigns[i].area.h;
+
+            drawLine(data, left, top, right, top + 2, 0, 255, 255);
+            drawLine(data, left, bottom - 2, right, bottom, 0, 255, 255);
+            drawLine(data, left, top, left + 2, bottom, 0, 255, 255);
+            drawLine(data, right - 2, top, right, bottom, 0, 255, 255);
         }
 
         glGenTextures(1, &tex);
