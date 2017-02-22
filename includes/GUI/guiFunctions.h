@@ -239,6 +239,8 @@ struct nk_image loadImageFromMemory(const unsigned char* buf, int bufSize)
 void drawLine(unsigned char* data, int left, int top, int right, int bottom, int red, int green, int blue, int alpha = 255)
 {
     int row, col, depth = 4;
+    right = right < 640 ? right : 640;
+    left = left > 0 ? left : 0;
     for (row = top; row < bottom; row++) {
         for (col = left; col < right; col++) {            
             data[(row * 640 + col) * depth + 0] = red;
@@ -248,6 +250,24 @@ void drawLine(unsigned char* data, int left, int top, int right, int bottom, int
         }
     }
 }
+
+
+
+void drawLineTransparent(unsigned char* data, int left, int top, int right, int bottom, int red, int green, int blue, int alpha = 255)
+{
+    int row, col, depth = 4;
+    for (row = top; row < bottom; row++) {
+        for (col = left; col < right; col++) {            
+            data[(row * 640 + col) * depth + 0] += red;
+            data[(row * 640 + col) * depth + 1] += green;
+            data[(row * 640 + col) * depth + 2] += blue;
+            data[(row * 640 + col) * depth + 3] = alpha;
+        }
+    }
+}
+
+
+
 struct nk_image loadStreamImageFromMemory(const unsigned char* buf, int bufSize, line_data& myline, std::vector<sign_data>& mysigns)
 {
     #if defined(WINDOWS)
@@ -262,14 +282,32 @@ struct nk_image loadStreamImageFromMemory(const unsigned char* buf, int bufSize,
             exit(1);
         }
 
-        drawLine(data, myline.center_of_line - 5, 440, myline.center_of_line + 5, y, 0, 255, 0, 120);
-        drawLine(data, myline.robot_center - 5, 440, myline.robot_center + 5, y, 255, 255, 137, 0);
+        if (myline.on_line) {
+            drawLineTransparent(data, 0, 450, x, y, 0, 0, 0, 130);            
+            drawLine(data, 0, y - 2, myline.robot_center - 5, y, 255, 188, 0);
+            drawLine(data, myline.robot_center + 5, y - 2, x, y, 255, 188, 0);
 
-        int left = 320, top = 200, right = 640, bottom = 350;
-        drawLine(data, left, top, right, top + 2, 222, 255, 0);
-        drawLine(data, left, bottom - 2, right, bottom, 222, 255, 0);
-        drawLine(data, left, top, left + 2, bottom, 222, 255, 0);
-        drawLine(data, right - 2, top, right, bottom, 222, 255, 0);
+            drawLine(data, myline.robot_center - 5, 450, myline.robot_center + 5, y,     0, 0, 0, 0);
+            drawLine(data, myline.robot_center + 3, 450, myline.robot_center + 5, y,     255, 188, 0);
+            drawLine(data, myline.robot_center - 5, 450, myline.robot_center - 3, y,     255, 188, 0);
+            drawLine(data, myline.center_of_line - 3, 450, myline.center_of_line + 3, y, 255, 188, 0);
+        }
+        else {
+            drawLine(data, 0, 450, x, y, 255, 0, 0, 130);
+        }
+
+        int left = 325, top = 200, right = 640, bottom = 350;
+        drawLine(data, left, top, left + 10, top + 2,       255, 188, 0);
+        drawLine(data, right - 10, top, right, top + 2,     255, 188, 0);
+
+        drawLine(data, left, bottom - 2, left + 10, bottom, 255, 188, 0);
+        drawLine(data, right - 10, bottom - 2, right, bottom, 255, 188, 0);
+
+        drawLine(data, left, top, left + 2, top + 10,     255, 188, 0);
+        drawLine(data, left, bottom - 10, left + 2, bottom,     255, 188, 0);
+
+        drawLine(data, right - 2, top, right, top + 10,   255, 188, 0);
+        drawLine(data, right - 2, bottom - 10, right, bottom,   255, 188, 0);
 
         for (unsigned i = 0; i < mysigns.size(); ++i) {
             left = 320 + mysigns[i].area.x;

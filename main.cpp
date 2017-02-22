@@ -57,6 +57,8 @@ int main(int argc, char* argv[])
     std::thread thr(client_fnc,ref(syst),ref(*client));
 	thr.detach();
 
+    int power;
+    char speed[] = "Power: xx%";
 	while (true) 
     {
         syst.line_get(myline);
@@ -91,7 +93,7 @@ int main(int argc, char* argv[])
         }
         nk_end(ctx);
 
-        if (nk_begin(ctx, "Info", nk_rect(WINDOW_WIDTH - 300, 0, 300, WINDOW_HEIGHT), NK_WINDOW_TITLE)) 
+        if (nk_begin(ctx, "Objects", nk_rect(WINDOW_WIDTH - 300, 0, 300, WINDOW_HEIGHT - 100), NK_WINDOW_TITLE)) 
         {
             for (unsigned i = 0; i < mysigns.size(); ++i) 
             {
@@ -140,10 +142,20 @@ int main(int argc, char* argv[])
         }
         nk_end(ctx);
 
-		render(&wi);
+        if (nk_begin(ctx, "Info", nk_rect(WINDOW_WIDTH - 300, WINDOW_HEIGHT - 100, 300, 100), NK_WINDOW_TITLE)) 
+        {
+            power = engine.speed / 10;
+            speed[7] = power / 10 % 10 + '0';
+            speed[8] = power % 10 + '0';
+            nk_layout_row_static(ctx, 30, 100, 1);
+            nk_label(ctx, speed, NK_TEXT_LEFT);
+        }
+        nk_end(ctx);
 
-        curObj->free();        
-        glDeleteTextures(1,(const GLuint*)&streamImage.handle.id);        
+		render(&wi);
+        
+        curObj->free();
+        glDeleteTextures(1,(const GLuint*)&streamImage.handle.id);
 	}
 
 	shutdown(&wi);
