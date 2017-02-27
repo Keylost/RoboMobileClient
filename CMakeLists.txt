@@ -3,6 +3,13 @@ cmake_minimum_required (VERSION 2.8)
 set(PROJECT Client)
 project (${PROJECT})
 
+if (WIN32)
+	message("WINDOWS")
+	add_definitions(-DWINDOWS)
+else()
+	message("LINUX")	
+endif()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 # 	add_definitions(-g)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
@@ -20,14 +27,24 @@ include_directories(
 	includes/Client
 )
 
-find_package(SDL2 REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
+if (WIN32)
+	find_library(GDIP gdiplus)
+else()
+	find_package(SDL2 REQUIRED)
+	find_package(OpenGL REQUIRED)
+	find_package(GLEW REQUIRED)
+endif()
 
 add_executable(${PROJECT} ${SOURCES})
 
-target_link_libraries(${PROJECT}
-	${SDL2_LIBRARIES}
-	${OPENGL_LIBRARIES}
-	${GLEW_LIBRARIES}
-)
+if (WIN32)
+	target_link_libraries(${PROJECT}
+		${GDIP_LIBRARIES}
+	)
+else()
+	target_link_libraries(${PROJECT}
+		${SDL2_LIBRARIES}
+		${OPENGL_LIBRARIES}
+		${GLEW_LIBRARIES}
+	)
+endif()
