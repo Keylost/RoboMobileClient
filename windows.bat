@@ -33,7 +33,7 @@ pause
 exit
 
 rem Настроить окружение
-:vs13
+:vs14
 call "%VS140COMNTOOLS%"vsvars32.bat
 goto compile
 :vs13
