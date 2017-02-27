@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
 	#if defined(WIN32)
 		MSG msg;
 		int running;
-		int needs_refresh;
+		int needs_refresh = 0;
 	#elif defined(UNIX)
 		SDL_Event evt;
 	#endif
