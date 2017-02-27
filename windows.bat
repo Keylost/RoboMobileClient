@@ -52,10 +52,10 @@ goto compile
 rem Скомпилировать
 :compile
 echo "Compilation.."
-devenv cl.sln /build "Release|Win32" 
-rem devenv cl.sln /build "Debug|Win32"
-rem devenv cl.sln /build "Release|x64"
-rem devenv cl.sln /build "Debug|x64"
+devenv Client.sln /build "Release|Win32" 
+rem devenv Client.sln /build "Debug|Win32"
+rem devenv Client.sln /build "Release|x64"
+rem devenv Client.sln /build "Debug|x64"
 
 echo [MSVC] FINISHED!
 pause
