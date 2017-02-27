@@ -12,6 +12,9 @@ echo Build complete!
 
 echo Detecting Visual Studio...
 rem Обнаружить visual studio
+if exist "%VS140COMNTOOLS%"vsvars32.bat (
+	goto vs14
+)
 if exist "%VS130COMNTOOLS%"vsvars32.bat (
 	goto vs13
 )
@@ -30,6 +33,9 @@ pause
 exit
 
 rem Настроить окружение
+:vs13
+call "%VS140COMNTOOLS%"vsvars32.bat
+goto compile
 :vs13
 call "%VS130COMNTOOLS%"vsvars32.bat
 goto compile

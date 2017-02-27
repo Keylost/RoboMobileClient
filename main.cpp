@@ -118,15 +118,15 @@ int main(int argc, char* argv[])
                         nk_image(ctx, giveWaySign);
                         break;
                     case sign_trafficlight_red:
-                        nk_layout_row_static(ctx, 100, 100, 1);
+                        nk_layout_row_static(ctx, 200, 100, 1);
                         nk_image(ctx, redLight);
                         break;
                     case sign_trafficlight_yellow:
-                        nk_layout_row_static(ctx, 100, 100, 1);
+                        nk_layout_row_static(ctx, 200, 100, 1);
                         nk_image(ctx, yellowLight);
                         break;
                     case sign_trafficlight_green:
-                        nk_layout_row_static(ctx, 100, 100, 1);
+                        nk_layout_row_static(ctx, 200, 100, 1);
                         nk_image(ctx, greenLight);
                         break;
                     case sign_starttrafficlight_red:
