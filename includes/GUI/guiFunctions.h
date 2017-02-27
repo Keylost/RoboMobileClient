@@ -18,7 +18,8 @@
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
 
 #if defined(WIN32)
-	#define NK_GDIP_IMPLEMENTATION
+	#define DX_WINTITSIZE 128
+	#define WIN32_LEAN_AND_MEAN
 
 	#include <windows.h>
 	#include <commdlg.h>
@@ -28,8 +29,6 @@
 
 	#define NK_GDIP_IMPLEMENTATION
 	#include "nuklear_gdip.h"
-
-	#define DX_WINTITSIZE 128
 
 #elif defined(UNIX)
 	#include <GL/glew.h>
@@ -49,6 +48,24 @@
 
 	#define STB_IMAGE_IMPLEMENTATION
 	#include "stb_image.h"
+#endif
+
+
+
+#if defined(WIN32)
+static LRESULT CALLBACK
+WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+	switch (msg) {
+ 		case WM_DESTROY:
+ 			PostQuitMessage(0);
+ 			return 0;
+	}
+	if (nk_gdip_handle_event(wnd, msg, wparam, lparam)) {
+		return 0;
+	}
+	return DefWindowProcW(wnd, msg, wparam, lparam);
+}
 #endif
 
 

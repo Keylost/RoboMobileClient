@@ -579,7 +579,7 @@ static void
 nk_gdip_draw_image(short x, short y, unsigned short w, unsigned short h,
     struct nk_image img, struct nk_color col)
 {
-    GpImage *image = img.handle.ptr;
+    GpImage *image = (GpImage*) img.handle.ptr;
     GdipDrawImageRectI(gdip.memory, image, x, y, w, h);
 }
 

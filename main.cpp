@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 						nk_image(ctx, crosswalkSignImage);			
 						break;
 					case sign_stop: 
-						nk_layout_row_static(ctx, 100, 100, 1);                       
+						nk_layout_row_static(ctx, 100, 100, 1);
 						nk_image(ctx, stopSignImage);
 						break;
 					case sign_mainroad:
