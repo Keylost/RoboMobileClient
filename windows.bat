@@ -3,8 +3,8 @@ echo Building...
 cd %~dp0
 del /F /Q build
 mkdir build
-mkdir build\img
-copy img build\img\
+mkdir build\images
+copy images build\images\
 cd build
 cmake ..
 
