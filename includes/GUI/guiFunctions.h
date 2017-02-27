@@ -25,6 +25,8 @@
 
 	#define NK_IMPLEMENTATION
 	#include "nuklear.h"
+
+	#define NK_GDIP_IMPLEMENTATION
 	#include "nuklear_gdip.h"
 
 	#define DX_WINTITSIZE 128
@@ -32,7 +34,6 @@
 #elif defined(UNIX)
 	#include <GL/glew.h>
 
-	#define NK_SDL_GL2_IMPLEMENTATION
 	#include <SDL2/SDL.h>
 	#include <SDL2/SDL_opengl.h>
 
@@ -42,6 +43,8 @@
 
 	#define NK_IMPLEMENTATION
 	#include "nuklear.h"
+
+	#define NK_SDL_GL2_IMPLEMENTATION
 	#include "nuklear_sdl_gl2.h"
 
 	#define STB_IMAGE_IMPLEMENTATION
