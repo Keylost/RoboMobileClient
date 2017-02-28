@@ -204,7 +204,7 @@ static struct nk_image loadImageFromFile(const char *filename)
 {
 	#if defined(WIN32)
 		wchar_t* wFilename = new wchar_t[strlen(filename)];
-		mbstowcs(wFIlename, filename, strlen(filename));
+		mbstowcs(wFilename, filename, strlen(filename));
 
 		struct nk_image returnImage = nk_gdip_load_image_from_file(wFilename);
 		delete[] wFilename;
