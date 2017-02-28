@@ -18,6 +18,8 @@
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
 
 #if defined(WIN32)
+	#define _CRT_SECURE_NO_WARNINGS
+
 	#define DX_WINTITSIZE 128
 	#define WIN32_LEAN_AND_MEAN
 
@@ -53,19 +55,19 @@
 
 
 #if defined(WIN32)
-static LRESULT CALLBACK
-WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-	switch (msg) {
- 		case WM_DESTROY:
- 			PostQuitMessage(0);
- 			return 0;
+	static LRESULT CALLBACK
+	WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
+	{
+		switch (msg) {
+ 			case WM_DESTROY:
+	 			PostQuitMessage(0);
+ 				return 0;
+		}
+		if (nk_gdip_handle_event(wnd, msg, wparam, lparam)) {
+			return 0;
+		}
+		return DefWindowProcW(wnd, msg, wparam, lparam);
 	}
-	if (nk_gdip_handle_event(wnd, msg, wparam, lparam)) {
-		return 0;
-	}
-	return DefWindowProcW(wnd, msg, wparam, lparam);
-}
 #endif
 
 
@@ -201,7 +203,12 @@ void shutdown(Platform* wi)
 static struct nk_image loadImageFromFile(const char *filename)
 {
 	#if defined(WIN32)
-		return nk_gdip_load_image_from_file(filename);
+		wchar_t* wFilename = new wchar_t[strlen(filename)];
+		mbstowcs(wFIlename, filename, strlen(filename));
+
+		struct nk_image returnImage = nk_gdip_load_image_from_file(wFilename);
+		delete[] wFilename;
+		return returnImage;
 	#elif defined(UNIX)
 		int x, y, n;
 		GLuint tex;
