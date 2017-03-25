@@ -1,7 +1,9 @@
 #pragma once
 #include "config.hpp"
+#include <time.h>
 
 #ifdef __linux__
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -32,8 +34,11 @@ class Client
 	bool connectState;
 	
 	public:
+	unsigned timeout; //если в течении данного времени не будет связи с сервером, то соединение считается разорванным. В секундах
+	time_t timeLastServerSeen;
+		
 	Client(System &conf);
-	void get_data(void *dst, size_t size);
+	bool get_data(void *dst, size_t size);
 	void send_data(void *src, size_t size);
 	bool connect();
 	bool isConnect();

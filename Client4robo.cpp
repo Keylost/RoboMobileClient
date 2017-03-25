@@ -59,10 +59,14 @@ int main(int argc, char *argv[])
 	thr.detach();
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
 	printf("Press u to take screenshot\n");
-		
+	
+	syst.setThrState(+1);
+	
 	while(true)
 	{
-		curObj = queue.waitForNewObject(curObj);
+		curObj = queue.waitForNewObject(curObj, 5000);
+		if(curObj == NULL) break; //завершить цикл по таймауту
+		
 		cv::Mat &img = *(curObj->obj);
 		
 		if(syst.clear_video)
@@ -99,6 +103,8 @@ int main(int argc, char *argv[])
 		
 		curObj->free();
 	}
+	
+	syst.setThrState(-1);
 
 	deinit();
 	return 0;
@@ -167,11 +173,6 @@ void show_telemetry(cv::Mat &image)
 	int xindent;
 	int yindent = 0;
 	
-	/* Отсортировать знаки по времени обнаружения
-	std::sort(mysigns.begin(), mysigns.end(), [](const sign_data& a, const sign_data& b)
-	{
-		return a.detect_time < b.detect_time;
-	});*/
 	for(unsigned i=0;i<mysigns.size();i++)
 	{
 		yindent += 10;
@@ -369,7 +370,7 @@ void deinit()
 	video.deinit();
 	cv::destroyAllWindows();
 	syst.setExitState();
-	//sleep(1);
+	
 	exit(EXIT_SUCCESS);
 }
 

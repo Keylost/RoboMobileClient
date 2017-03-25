@@ -2,23 +2,6 @@
 
 using namespace cv;
 
-/* поддерживать соединение с другой стороной */
-void keepAliveEnable(int sockfd)
-{
-	int32_t optval = 1;
-	size_t optlen = sizeof(optval);
-	if(setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE, (char *)&optval, optlen) < 0)
-	{
-		perror("keepAliveEnable()");
-#ifdef __linux__
-		close(sockfd);
-#else
-		closesocket(sockfd);
-#endif
-		exit(EXIT_FAILURE);
-	}
-}
-
 Client::Client(System &conf)
 {
 	connectState = false;
@@ -56,44 +39,55 @@ bool Client::connect()
 			server->h_length);
 	serv_addr.sin_port = htons(syst->portno);
 	
-	//set timeouts
-	struct timeval tv;
-	int tvsz=sizeof(tv);
-	struct timeval savedtv;
-	socklen_t savedtv_size = sizeof(savedtv);
-	//save timeout                                                                            
-	getsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,&savedtv_size);
-	//set 1 second timeout
-	tv.tv_sec=7; tv.tv_usec=0;
-	//if (setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&tv,tvsz)<0)
+	/////////////////////блок только для линукс
+	int flags = fcntl(sockfd, F_GETFL, 0);
+	if(fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
-		//perror("setsockopt ");
+		return false; //Ошибка настройки сокета.
 	}
-	//if (setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&tv,tvsz)<0)
-	{
-		//perror("setsockopt ");
+	/////////////////////
+	
+	if (::connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != 0)
+	{		
+		fd_set rfds, wfds;
+		struct timeval tv;
+		tv.tv_sec = 7; tv.tv_usec = 0;
+		FD_ZERO(&rfds);
+		FD_ZERO(&wfds);
+		FD_SET(sockfd, &wfds);
+		FD_SET(sockfd, &rfds);
+		int selRet = select(sockfd + 1, &rfds, &wfds, NULL, &tv);
+		
+		if(FD_ISSET(sockfd, &wfds) || FD_ISSET(sockfd, &rfds))
+		{
+			socklen_t err_len;
+			int error;
+			err_len = sizeof(error);
+			if(getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &err_len) < 0 || error != 0)
+			{
+				return false; //Ошибка соединения.
+			}			
+		}
+		else
+		{
+			return false;
+		}
 	}
 	
-	if (::connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+	/////////////////////блок только для линукс
+	if(fcntl(sockfd, F_SETFL, flags) == -1)
 	{
-		//reset timeouts                                                                             
-		//setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
-		//setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
-		return false;
+		return false; //Ошибка настройки сокета.
 	}
-	//reset timeouts                                                                             
-	//setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(char *)&savedtv,savedtv_size);
-	//setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(char *)&savedtv,savedtv_size);
+	/////////////////////	
 	
-	keepAliveEnable(sockfd);
-	
-	get_data(&(syst->capture_width), 2);
-	get_data(&(syst->capture_height), 2);
-	get_data(&(syst->signarea),sizeof(Rect));
-	get_data(&(syst->linearea),sizeof(Rect));
+	if(!get_data(&(syst->capture_width), 2)) return false;
+	if(!get_data(&(syst->capture_height), 2)) return false;
+	if(!get_data(&(syst->signarea),sizeof(Rect))) return false;
+	if(!get_data(&(syst->linearea),sizeof(Rect))) return false;
 	
 	connectState = true;
-	return connectState;
+	return true;
 }
 
 void Client::disconnect()
@@ -105,22 +99,23 @@ void Client::disconnect()
 	#endif
 }
 
-void Client::get_data(void *dst, size_t size)
+bool Client::get_data(void *dst, size_t size)
 {
-	
-	
 	size_t i=0;
 	int bytes =0;
+	
+	//tv.tv_sec = 7; tv.tv_usec = 0;
+	
 	for (i = 0; i < size; i += bytes) 
 	{
 		if ((bytes = recv(sockfd, (char *)dst+i, size-i, 0)) <= 0) 
 		{
 			printf("client_fnc(): Getting data error. Server is dead\n");
-			disconnect();
-			exit(EXIT_FAILURE);
+			return false;
 		}
 	}
-	return;
+	
+	return true;
 }
 
 void Client::send_data(void *src,size_t size)
@@ -142,6 +137,7 @@ void Client::send_data(void *src,size_t size)
 
 void client_fnc(System &syst,Client &client)
 {
+	syst.setThrState(+1);
 	
 	Queue<Mat> &iqueue = syst.iqueue;
 	
@@ -161,15 +157,15 @@ void client_fnc(System &syst,Client &client)
 	while(1)
 	{
 		if(syst.getExitState()) break;
-		client.get_data(&tp, sizeof(uint32_t));
-		client.get_data(&dataSize, sizeof(uint32_t));
+		if(!client.get_data(&tp, sizeof(uint32_t))) break;
+		if(!client.get_data(&dataSize, sizeof(uint32_t))) break; 
 		
 		switch(tp)
 		{
 			case Image_t:
 			{
 				b = vector<uchar>(dataSize);
-				client.get_data(&b[0], (size_t)dataSize);
+				if(!client.get_data(&b[0], (size_t)dataSize)) goto thread_end; //перейти к завершению потока, если не удалось получить данные
 				Object<Mat> *newObj = new Object<Mat>();
 				*(newObj->obj) = imdecode(b,1);
 				iqueue.push(newObj);
@@ -179,13 +175,13 @@ void client_fnc(System &syst,Client &client)
 			case Line_t:
 			{
 				line_data localeLine;
-				client.get_data(&localeLine, (size_t)dataSize);
+				if(!client.get_data(&localeLine, (size_t)dataSize)) goto thread_end; //перейти к завершению потока, если не удалось получить данные
 				syst.line_set(localeLine);
 				break;
 			}
 			case Sing_t:
 			{				
-				client.get_data(&sig, (size_t)dataSize);				
+				if(!client.get_data(&sig, (size_t)dataSize)) goto thread_end; //перейти к завершению потока, если не удалось получить данные				
 				
 				unsigned i=0;
 				for(;i<locale.size();i++)
@@ -206,7 +202,7 @@ void client_fnc(System &syst,Client &client)
 			case Engine_t:
 			{
 				Engine locale;
-				client.get_data(&locale, (size_t)dataSize);
+				if(!client.get_data(&locale, (size_t)dataSize)) goto thread_end; //перейти к завершению потока, если не удалось получить данные
 				syst.engine_set(locale);
 				break;
 			}
@@ -214,7 +210,7 @@ void client_fnc(System &syst,Client &client)
 			{
 				printf("[W]: Unknown data format\n");
 				char *freebuffer = new char[dataSize];
-				client.get_data(freebuffer, (size_t)dataSize);
+				if(!client.get_data(freebuffer, (size_t)dataSize)) goto thread_end; //перейти к завершению потока, если не удалось получить данные
 				delete[] freebuffer;
 				break;
 			}
@@ -229,10 +225,19 @@ void client_fnc(System &syst,Client &client)
 			}
 		}
 		syst.signs_set(locale);
-		
 	}
 	
+	/*
+	 * Метка для перехода в конец цикла.
+	 * Да, да... Это для goto и за мной уже выехали)
+	 */
+	thread_end:
 	client.disconnect();
+	syst.setThrState(-1);
+	if(syst.getExitState())
+	{
+		syst.setExitState();
+	}
 	
 	return;
 }

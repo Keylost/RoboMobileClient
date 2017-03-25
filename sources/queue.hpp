@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
 #include <opencv2/opencv.hpp>
-//#include <unistd.h>
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <stdint.h>
 
 using namespace std;
 //using namespace cv;
@@ -38,6 +38,7 @@ class Queue
 	void push(Object<T> *obj);
 	
 	Object<T> *waitForNewObject(Object<T> *curObj);
+	Object<T> *waitForNewObject(Object<T> *curObj,  uint32_t timeout);
 };
 
 /* Это нужно, чтобы избежать проблем с линковкой шаблонных методов */

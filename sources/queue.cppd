@@ -37,6 +37,36 @@ Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj)
 	return curObj;
 }
 
+/*
+*Ожидание нового элемента в очереди с таймаутом в миллисекундах.
+*Возвращает NULL, если время ожидания истекло.
+*/
+template<typename T>
+Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj, uint32_t timeout)
+{
+	Object<T> *oldobj = curObj;
+	uint32_t timeWait = 0;
+	
+	while(1)
+	{
+		_lock.lock();
+		curObj = _obj;
+		_lock.unlock();
+		if(curObj==NULL || oldobj==curObj)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			timeWait++;
+			if(timeWait > timeout) return NULL;
+		}
+		else
+		{
+			curObj->busy();
+			break;
+		}
+	}
+	return curObj;
+}
+
 template<typename T>
 Object<T>::Object()
 {
