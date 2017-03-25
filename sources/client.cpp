@@ -6,6 +6,8 @@ Client::Client(System &conf)
 {
 	connectState = false;
 	syst = &conf;
+	
+	timeout = 5;
 }
 
 bool Client::isConnect()
@@ -39,24 +41,28 @@ bool Client::connect()
 			server->h_length);
 	serv_addr.sin_port = htons(syst->portno);
 	
-	/////////////////////блок только для линукс
+	#ifdef __linux__
 	int flags = fcntl(sockfd, F_GETFL, 0);
 	if(fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1)
 	{
 		return false; //Ошибка настройки сокета.
 	}
-	/////////////////////
+	#else
+	unsigned long iMode = 1; //1-включить NONBLOCK режим, 0 - выключить
+	if(ioctlsocket(sockfd, FIONBIO, &iMode) != 0)
+	{
+		return false; //Ошибка настройки сокета.
+	}
+	#endif
 	
 	if (::connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) != 0)
-	{		
-		fd_set rfds, wfds;
-		struct timeval tv;
-		tv.tv_sec = 7; tv.tv_usec = 0;
+	{
+		tv.tv_sec = timeout; tv.tv_usec = 0;
 		FD_ZERO(&rfds);
 		FD_ZERO(&wfds);
 		FD_SET(sockfd, &wfds);
 		FD_SET(sockfd, &rfds);
-		int selRet = select(sockfd + 1, &rfds, &wfds, NULL, &tv);
+		select(sockfd + 1, &rfds, &wfds, NULL, &tv);
 		
 		if(FD_ISSET(sockfd, &wfds) || FD_ISSET(sockfd, &rfds))
 		{
@@ -73,13 +79,6 @@ bool Client::connect()
 			return false;
 		}
 	}
-	
-	/////////////////////блок только для линукс
-	if(fcntl(sockfd, F_SETFL, flags) == -1)
-	{
-		return false; //Ошибка настройки сокета.
-	}
-	/////////////////////	
 	
 	if(!get_data(&(syst->capture_width), 2)) return false;
 	if(!get_data(&(syst->capture_height), 2)) return false;
@@ -104,14 +103,20 @@ bool Client::get_data(void *dst, size_t size)
 	size_t i=0;
 	int bytes =0;
 	
-	//tv.tv_sec = 7; tv.tv_usec = 0;
-	
-	for (i = 0; i < size; i += bytes) 
+	for(i = 0; i < size; i += bytes)
 	{
-		if ((bytes = recv(sockfd, (char *)dst+i, size-i, 0)) <= 0) 
+		tv.tv_sec = timeout; tv.tv_usec = 0;
+		FD_ZERO(&rfds);
+		FD_SET(sockfd, &rfds);
+		if(select(sockfd + 1, &rfds, NULL, NULL, &tv) <= 0)
 		{
-			printf("client_fnc(): Getting data error. Server is dead\n");
+			//todo: проверка на выход по прерыванию
+			printf("[E]: Connection with server closed! Bad connection.\n");
 			return false;
+		}
+		else
+		{
+			bytes = recv(sockfd, (char *)dst+i, size-i, 0);
 		}
 	}
 	
@@ -137,8 +142,6 @@ void Client::send_data(void *src,size_t size)
 
 void client_fnc(System &syst,Client &client)
 {
-	syst.setThrState(+1);
-	
 	Queue<Mat> &iqueue = syst.iqueue;
 	
 	vector<sign_data> locale;
@@ -233,7 +236,6 @@ void client_fnc(System &syst,Client &client)
 	 */
 	thread_end:
 	client.disconnect();
-	syst.setThrState(-1);
 	if(syst.getExitState())
 	{
 		syst.setExitState();

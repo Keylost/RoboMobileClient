@@ -60,8 +60,6 @@ int main(int argc, char *argv[])
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
 	printf("Press u to take screenshot\n");
 	
-	syst.setThrState(+1);
-	
 	while(true)
 	{
 		curObj = queue.waitForNewObject(curObj, 5000);
@@ -103,8 +101,6 @@ int main(int argc, char *argv[])
 		
 		curObj->free();
 	}
-	
-	syst.setThrState(-1);
 
 	deinit();
 	return 0;

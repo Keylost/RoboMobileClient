@@ -19,7 +19,6 @@ class System
 		mutex line_mutex; //мутекс для контроля доступа к данным линии
 		mutex sign_mutex; //мутекс для контроля доступа к данным знаков
 		mutex engine_mutex; //мутекс для контроля доступа к данным engine
-		mutex thrState_mutex; //мутекс для контроля доступа к данным thrState
 		mutex exitState_mutex; //мутекс для контроля доступа к данным exitState
 		
 		uint32_t  portno;
@@ -28,7 +27,6 @@ class System
 		char* host;
 		int32_t capture_width;
 		int32_t capture_height;
-		int thrState; //контроль количества потоков
 		bool exitState;
 		
 		//unsigned int ;
@@ -65,9 +63,6 @@ class System
 		
 		System()
 		{
-			thrState = 0;
-			//timeLastServerSeen = 0;
-			
 			exitState = false;
 			host = new char[strlen("192.168.111.1")+1];
 			memcpy(host, "192.168.111.1", strlen("192.168.111.1")+1);
@@ -84,8 +79,6 @@ class System
 		void engine_set(Engine &source);
 		void signs_get(vector<sign_data> &destination);
 		void signs_set(vector<sign_data> &source);
-		int  getThrState();
-		void setThrState(int a);
 		bool getExitState();
 		void setExitState();
 };

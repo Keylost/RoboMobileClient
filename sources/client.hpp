@@ -32,11 +32,13 @@ class Client
 	struct hostent *server;
 	int sockfd;
 	bool connectState;
+	unsigned timeout; //если в течении данного времени не будет связи с сервером, то соединение считается разорванным. В секундах
+	
+	/*структуры для select()*/
+	fd_set rfds, wfds;
+	struct timeval tv;
 	
 	public:
-	unsigned timeout; //если в течении данного времени не будет связи с сервером, то соединение считается разорванным. В секундах
-	time_t timeLastServerSeen;
-		
 	Client(System &conf);
 	bool get_data(void *dst, size_t size);
 	void send_data(void *src, size_t size);

@@ -42,22 +42,6 @@ void System::engine_set(Engine &source)
 	engine_mutex.unlock();
 }
 
-void System::setThrState(int a)
-{
-	thrState_mutex.lock();
-	thrState += a;
-	thrState_mutex.unlock();
-}
-
-int System::getThrState()
-{
-	int state;
-	thrState_mutex.lock();
-	state = thrState;
-	thrState_mutex.unlock();
-	return state;
-}
-
 void System::setExitState()
 {
 	exitState_mutex.lock();
