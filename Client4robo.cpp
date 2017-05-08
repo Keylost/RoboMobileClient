@@ -147,10 +147,10 @@ void show_telemetry(cv::Mat &image)
 	snprintf(buffer, sizeof(buffer), "%.2fm/s",engine.real_speed/100.0);
 	cv::putText(panel, string(buffer), cv::Point(5, height-80), cv::FONT_HERSHEY_COMPLEX_SMALL, 0.9, color);
 	
-	snprintf(buffer, sizeof(buffer), "Power");
-	cv::putText(panel, string(buffer), cv::Point(5, height-30), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
-	snprintf(buffer, sizeof(buffer), "%d %%",engine.speed/10);
-	cv::putText(panel, string(buffer), cv::Point(20, height-10), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	//snprintf(buffer, sizeof(buffer), "Power");
+	//cv::putText(panel, string(buffer), cv::Point(5, height-30), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
+	//snprintf(buffer, sizeof(buffer), "%d %%",engine.speed/10);
+	//cv::putText(panel, string(buffer), cv::Point(20, height-10), cv::FONT_HERSHEY_COMPLEX_SMALL, size, color);
 	
 	cv::circle(panel,cv::Point(panel.cols/2,height-60),11,cv::Scalar(0,0,250),1,8);
 	if(engine.speed != 0)
