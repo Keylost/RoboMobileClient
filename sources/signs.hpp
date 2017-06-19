@@ -15,7 +15,10 @@ enum signs
 	sign_trafficlight_red 			= 9,
 	sign_trafficlight_off			= 10,
 	sign_trafficlight_yelRed  		= 11,
-	sign_starttrafficlight_off 		= 12
+	sign_starttrafficlight_off 		= 12,
+	sign_move_left					= 13, //движение влево
+	sign_move_right					= 14, //движение вправо
+	sign_move_forward				= 15  //движение прямо
 };
 
 enum trafficlight_states
