@@ -21,6 +21,7 @@ using namespace std;
 
 cv::Mat crosswalk,stop,green_light,red_light,yellow_light,no_line;
 cv::Mat start_greenlight, start_redlight;
+cv::Mat move_forward, move_left, move_right;
 cv::Mat giveway,mainroad;
 cv::Mat window;
 cv::Mat wroi; //область изображения на window
@@ -232,6 +233,24 @@ void show_telemetry(cv::Mat &image)
 				yindent += start_greenlight.rows;
 				start_greenlight.copyTo(ROI);
 				break;
+			case sign_move_forward:
+				xindent = (panel.cols - move_forward.cols)/2;
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+move_forward.cols,yindent+move_forward.rows)));
+				yindent += move_forward.rows;
+				move_forward.copyTo(ROI);
+				break;
+			case sign_move_left:
+				xindent = (panel.cols - move_left.cols)/2;
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+move_left.cols,yindent+move_left.rows)));
+				yindent += move_left.rows;
+				move_left.copyTo(ROI);
+				break;
+			case sign_move_right:
+				xindent = (panel.cols - move_right.cols)/2;
+				ROI = panel(cv::Rect(cv::Point(xindent,yindent), cv::Point(xindent+move_right.cols,yindent+move_right.rows)));
+				yindent += move_right.rows;
+				move_right.copyTo(ROI);
+				break;
 			default:
 				break;
 		}
@@ -303,6 +322,18 @@ void init()
 	newSignSize.width = (int)(stop.cols/(stop.rows/signHeight));
 	cv::resize(stop,stop,newSignSize);
 	
+	move_forward = cv::imread("../img/move_forward.jpg",1);
+	newSignSize.width = (int)(move_forward.cols/(move_forward.rows/signHeight));
+	cv::resize(move_forward,move_forward,newSignSize);
+
+	move_left = cv::imread("../img/move_left.jpg",1);
+	newSignSize.width = (int)(move_left.cols/(move_left.rows/signHeight));
+	cv::resize(move_left,move_left,newSignSize);
+	
+	move_right = cv::imread("../img/move_right.jpg",1);
+	newSignSize.width = (int)(move_right.cols/(move_right.rows/signHeight));
+	cv::resize(move_right,move_right,newSignSize);	
+	
 	green_light = cv::imread("../img/green_light_s.jpg",1);
 	newSignSize.width = (int)(green_light.cols/(green_light.rows/signHeight));
 	cv::resize(green_light,green_light,newSignSize);
@@ -332,7 +363,7 @@ void init()
 	newSignSize.width = (int)(mainroad.cols/(mainroad.rows/signHeight));
 	cv::resize(mainroad,mainroad,newSignSize);	
 	
-	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data)
+	if(!crosswalk.data || !stop.data || !green_light.data || !yellow_light.data || !red_light.data || !no_line.data || !move_forward.data || !move_left.data || !move_right.data)
 	{
 		error("Can't load client data.\n");
 	}
