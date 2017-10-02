@@ -12,6 +12,12 @@
 //using namespace cv;
 using namespace std;
 
+struct RC_Command
+{
+	uint32_t speed = 0;
+	uint32_t angle = 90;
+	uint32_t direction = 1;
+};
 
 class System
 {
@@ -28,6 +34,8 @@ class System
 		int32_t capture_width;
 		int32_t capture_height;
 		bool exitState;
+		bool remoteControl;
+		RC_Command cmd;
 		
 		//unsigned int ;
 		
@@ -71,6 +79,7 @@ class System
 			capture_width = 640;
 			capture_height = 360;
 			clear_video = false;
+			remoteControl = false; //выключить удаленное управление по умолчанию
 		}
 		
 		void line_get(line_data &destination);

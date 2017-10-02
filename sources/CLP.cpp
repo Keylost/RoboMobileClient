@@ -52,7 +52,7 @@ void CLP::parse(int argc, char **argv,System &syst)
 	if (argc == 1) return;
 	
 	int32_t opt;
-	while ((opt = getopt(argc, argv, "hs:p:v:c")) != -1)
+	while ((opt = getopt(argc, argv, "hs:p:v:cr")) != -1)
 	{
 		
 		switch (opt)
@@ -60,13 +60,16 @@ void CLP::parse(int argc, char **argv,System &syst)
 		case 'h':
 			usage(argv[0]);
 			exit(0);
-		case 's':			
+		case 's':
 			delete[] syst.host;
 			syst.host = new char[strlen(optarg)+1];			
 			memcpy(syst.host, optarg, strlen(optarg)+1);
 			break;
-		case 'p':			
+		case 'p':
 			syst.portno = atoi(optarg);			
+			break;
+		case 'r': //enable remote control
+			syst.remoteControl = true;
 			break;
 		case 'c':
 			syst.clear_video = true;

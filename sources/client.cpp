@@ -84,6 +84,9 @@ bool Client::connect()
 	if(!get_data(&(syst->capture_height), 2)) return false;
 	if(!get_data(&(syst->signarea),sizeof(Rect))) return false;
 	if(!get_data(&(syst->linearea),sizeof(Rect))) return false;
+	char remote = '0';
+	if(syst->remoteControl) remote = '1';
+	send_data(&remote, 1);
 	
 	connectState = true;
 	return true;
@@ -160,6 +163,7 @@ void client_fnc(System &syst,Client &client)
 	while(1)
 	{
 		if(syst.getExitState()) break;
+		client.send_data(&(syst.cmd), sizeof(RC_Command));
 		if(!client.get_data(&tp, sizeof(uint32_t))) break;
 		if(!client.get_data(&dataSize, sizeof(uint32_t))) break; 
 		
@@ -171,6 +175,7 @@ void client_fnc(System &syst,Client &client)
 				if(!client.get_data(&b[0], (size_t)dataSize)) goto thread_end; //перейти к завершению потока, если не удалось получить данные
 				Object<Mat> *newObj = new Object<Mat>();
 				*(newObj->obj) = imdecode(b,1);
+				resize(*(newObj->obj), *(newObj->obj), Size(640, 480));
 				iqueue.push(newObj);
 				b.clear();
 				break;

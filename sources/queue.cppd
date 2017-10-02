@@ -61,6 +61,7 @@ Object<T> *Queue<T>::waitForNewObject(Object<T> *curObj, uint32_t timeout)
 		else
 		{
 			curObj->busy();
+			printf("%d\n", timeWait);
 			break;
 		}
 	}

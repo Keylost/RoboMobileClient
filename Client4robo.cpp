@@ -13,9 +13,14 @@
 #include <string>
 #include <thread>
 
+
+#include <linux/input.h>
+
 #ifdef _MSC_VER
 #define snprintf _snprintf_s 
 #endif
+
+#define GET_DATASET
 
 using namespace std;
 
@@ -27,9 +32,15 @@ cv::Mat window;
 cv::Mat wroi; //область изображения на window
 cv::Mat panel; //область панели информации на window
 cv::Mat img_clear;
+cv::Mat wheel;
 line_data myline;
 vector<sign_data> mysigns;
 Engine engine;
+
+#ifdef GET_DATASET
+FILE *dataset = NULL;
+uint32_t imgNum = 1;
+#endif
 
 System syst;
 int bordersize =100;
@@ -48,6 +59,9 @@ void Power_switcher(int pos, void *ptr);
 void init();
 void deinit();
 
+
+int curSpeed = 0;
+int curAngle = 90;
 int main(int argc, char *argv[])
 {
 	Object<cv::Mat> *curObj = NULL;
@@ -83,26 +97,85 @@ int main(int argc, char *argv[])
 		cv::imshow("Stream", window);
 		
 		int c = cv::waitKey(1);
-		if(c==27)
+		
+		int changeSpeedConst = 4;
+		int changeAngleConst = 4;
+		int angleMax = 120;
+		int angleMin = 60;
+		int speedMin = -32;
+		int speedMax = 32;
+		
+		switch(c)
 		{
-			break;
-		}
-		else if(c==117) //take screenshot u
-		{
-			snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", (long unsigned)time(NULL));
-			if(imwrite(screenshot_name, window))
+			case 27:
 			{
-				printf("[I]: screenshot %s saved\n", screenshot_name);
+				break;
 			}
-			else
+			case 117: //take screenshot u
 			{
-				printf("[I]: screenshot cant't be saved. No access/No codecs\n");
+				snprintf(screenshot_name, sizeof(screenshot_name), "%lu.png", (long unsigned)time(NULL));
+				if(imwrite(screenshot_name, window))
+				{
+					printf("[I]: screenshot %s saved\n", screenshot_name);
+				}
+				else
+				{
+					printf("[I]: screenshot cant't be saved. No access/No codecs\n");
+				}
+				break;
+			}
+			case 'w': //move faster
+			{
+				curSpeed+=changeSpeedConst;
+				if(curSpeed>speedMax) curSpeed = speedMax;
+				break;
+			}
+			case 'a': //move left
+			{
+				curAngle+=changeAngleConst;
+				if(curAngle>angleMax) curAngle = angleMax;
+				break;
+			}
+			case 'd': //move right
+			{
+				curAngle-=changeAngleConst;
+				if(curAngle<angleMin) curAngle = angleMin;
+				break;
+			}
+			case 's': //move slower
+			{
+				curSpeed-=changeSpeedConst;
+				if(curSpeed<speedMin) curSpeed = speedMin;				
+			}
+			default:
+			{
+				break;
 			}
 		}
 		
+		if(curSpeed>=0)
+		{
+			syst.cmd.direction = 1;
+			syst.cmd.speed = curSpeed;
+		}
+		else
+		{
+			syst.cmd.direction = 2;
+			syst.cmd.speed = abs(curSpeed);
+		}
+		syst.cmd.angle = curAngle;
+		
+		#ifdef GET_DATASET
+		char fname[80];
+		snprintf(fname, 80, "dataset/imgs/%d.png", imgNum);
+		imwrite(fname, img);
+		fprintf(dataset, "%s %d %d %d\n", fname, syst.cmd.speed, syst.cmd.angle, syst.cmd.direction);
+		imgNum++;
+		#endif
+		
 		curObj->free();
 	}
-
+	
 	deinit();
 	return 0;
 }
@@ -124,8 +197,11 @@ int main(int argc, char *argv[])
 
 
 
-void show_telemetry(cv::Mat &image)
+void show_telemetry(cv::Mat &img)
 {
+	cv::Mat image;
+	img.copyTo(image);
+	
 	//create window//
 	syst.line_get(myline);
 	syst.signs_get(mysigns);
@@ -139,6 +215,17 @@ void show_telemetry(cv::Mat &image)
 	}
 	
 	cv::rectangle(image, syst.signarea, cv::Scalar(255,0,0), 2, 8);//sign area
+	
+	if(syst.remoteControl)
+	{
+		cv::Mat wheelTmp;
+		int angl = syst.cmd.angle-90;
+		if(angl<0) angl = 360+angl;
+		cv::Mat rotM = cv::getRotationMatrix2D(cv::Point2f(wheel.cols/2, wheel.rows/2), angl, 1.0);
+		cv::warpAffine(wheel, wheelTmp, rotM, cv::Size(wheel.cols, wheel.rows));
+		cv::Mat wheelRoi = image(cv::Rect(cv::Point(image.cols/2-wheel.cols/2, image.rows - wheel.rows-20), cv::Point(image.cols/2+wheel.cols/2, image.rows - 20)));
+		wheelTmp.copyTo(wheelRoi);
+	}
 	
 	cv::Scalar color= CV_RGB(255,0,0);
 	double size =1.1;
@@ -262,16 +349,19 @@ void show_telemetry(cv::Mat &image)
 		cv::rectangle(image,cv::Point(fx,fy),cv::Point(ex,ey),cv::Scalar(0,255,0), 4, 8);	
 	}
 	
-	if(myline.on_line)
+	if(!syst.remoteControl)
 	{
-		cv::rectangle(image,cv::Point(myline.robot_center-5,height-60),cv::Point(myline.robot_center+5,height-1),cv::Scalar(255,255,255), CV_FILLED, 8);
-		cv::rectangle(image,cv::Point(myline.robot_center-5,height-60),cv::Point(myline.robot_center+5,height-1),cv::Scalar(255,0,0), 1, 8);
-		cv::rectangle(image,cv::Point(myline.center_of_line-5,height-60),cv::Point(myline.center_of_line+5,height-1),cv::Scalar(0,255,0), CV_FILLED, 8);	
-	}
-	else
-	{
-		ROI = image(cv::Rect(cv::Point(image.cols/2+no_line.cols/2,image.rows-10), cv::Point(image.cols/2-(no_line.cols-no_line.cols/2),image.rows-no_line.rows-10)));
-		no_line.copyTo(ROI);	
+		if(myline.on_line)
+		{
+			cv::rectangle(image,cv::Point(myline.robot_center-5,height-60),cv::Point(myline.robot_center+5,height-1),cv::Scalar(255,255,255), CV_FILLED, 8);
+			cv::rectangle(image,cv::Point(myline.robot_center-5,height-60),cv::Point(myline.robot_center+5,height-1),cv::Scalar(255,0,0), 1, 8);
+			cv::rectangle(image,cv::Point(myline.center_of_line-5,height-60),cv::Point(myline.center_of_line+5,height-1),cv::Scalar(0,255,0), CV_FILLED, 8);	
+		}
+		else
+		{
+			ROI = image(cv::Rect(cv::Point(image.cols/2+no_line.cols/2,image.rows-10), cv::Point(image.cols/2-(no_line.cols-no_line.cols/2),image.rows-no_line.rows-10)));
+			no_line.copyTo(ROI);	
+		}
 	}
 	
 	image.copyTo(wroi);	
@@ -289,6 +379,15 @@ void Power_switcher(int pos, void *ptr)
 
 void init()
 {
+	#ifdef GET_DATASET
+	dataset = fopen("dataset/db.txt", "a+");
+	if(!dataset)
+	{
+		printf("[E]: Can't open dataset db file: dataset/db.txt.\n");
+		exit(0);
+	}
+	#endif
+	
 	client = new Client(syst);
 	
 	printf("[I]: Connecting to %s:%d...\n",syst.host, syst.portno);
@@ -321,6 +420,10 @@ void init()
 	stop = cv::imread("../img/stop.jpeg",1);
 	newSignSize.width = (int)(stop.cols/(stop.rows/signHeight));
 	cv::resize(stop,stop,newSignSize);
+	
+	wheel = cv::imread("../img/wheel.png",1);
+	cv::resize(wheel,wheel,cv::Size(120,120));
+	//cv::cvtColor(wheel, wheel, CV_BGR2GRAY);
 	
 	move_forward = cv::imread("../img/move_forward.jpg",1);
 	newSignSize.width = (int)(move_forward.cols/(move_forward.rows/signHeight));
@@ -394,6 +497,9 @@ void init()
 
 void deinit()
 {
+	#ifdef GET_DATASET
+	fclose(dataset);
+	#endif
 	video.deinit();
 	cv::destroyAllWindows();
 	syst.setExitState();
