@@ -69,7 +69,11 @@ bool Client::connect()
 			socklen_t err_len;
 			int error;
 			err_len = sizeof(error);
+			#ifdef __linux__
 			if(getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &err_len) < 0 || error != 0)
+			#else
+			if(getsockopt(sockfd, SOL_SOCKET, SO_ACCEPCONN, (char*)&error, &err_len) == SOCKET_ERROR)
+			#endif
 			{
 				return false; //Ошибка соединения.
 			}			
