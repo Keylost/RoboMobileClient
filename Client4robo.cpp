@@ -12,6 +12,7 @@
 #include "CLP.hpp"
 #include <string>
 #include <thread>
+#include "server.hpp"
 
 #ifdef _MSC_VER
 #define snprintf _snprintf_s 
@@ -58,6 +59,12 @@ int main(int argc, char *argv[])
 	/*Создает поток приема данных от сервера*/
 	thread thr(client_fnc,ref(syst),ref(*client));
 	thr.detach();
+	
+	#if defined(RELAYING_MODE)
+	/*Создает поток передачи данных телеметрии третьей стороне*/
+	thread relaying_thr(server_fnc,ref(syst));
+	relaying_thr.detach();
+	#endif
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
 	printf("Press u to take screenshot\n");
 	
