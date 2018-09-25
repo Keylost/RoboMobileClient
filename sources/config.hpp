@@ -9,6 +9,8 @@
 #include "Engine.hpp"
 #include "signs.hpp"
 
+//#define RELAYING_MODE //если раскоментировано, то клиент будет собран с поддержкой relay сервера
+
 //using namespace cv;
 using namespace std;
 

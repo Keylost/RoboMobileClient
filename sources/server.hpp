@@ -1,15 +1,12 @@
 #pragma once
 
-#ifdef WIN32
-#define RELAYING_MODE
-#endif
+
+#include "config.hpp"
 
 #if defined(RELAYING_MODE)
 #undef UNICODE
 
 #define WIN32_LEAN_AND_MEAN
-
-#include "config.hpp"
 
 #include <windows.h>
 #include <winsock2.h>

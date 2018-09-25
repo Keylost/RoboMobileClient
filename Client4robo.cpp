@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "client.hpp"
 #include <opencv2/opencv.hpp>
 #include <ctime>
 #include "videomaker.hpp"
@@ -13,6 +12,7 @@
 #include <string>
 #include <thread>
 #include "server.hpp"
+#include "client.hpp"
 
 #ifdef _MSC_VER
 #define snprintf _snprintf_s 
