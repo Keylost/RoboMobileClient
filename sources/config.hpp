@@ -12,13 +12,13 @@
 //using namespace cv;
 using namespace std;
 
-
 class System
 {
 	public:
 		mutex line_mutex; //мутекс для контроля доступа к данным линии
 		mutex sign_mutex; //мутекс для контроля доступа к данным знаков
 		mutex engine_mutex; //мутекс для контроля доступа к данным engine
+		mutex currentJPEG_mutex; //мутекс для контроля доступа к данным currentJPEG
 		mutex exitState_mutex; //мутекс для контроля доступа к данным exitState
 		
 		uint32_t  portno;
@@ -61,6 +61,11 @@ class System
 		 */
 		bool clear_video;
 		
+		/*
+		 * Последний полученный от машинки кадр в jpeg
+		 */
+		std::vector<uchar> currentJPEG;
+		
 		System()
 		{
 			exitState = false;
@@ -77,6 +82,8 @@ class System
 		void line_set(line_data &source);
 		void engine_get(Engine &destination);
 		void engine_set(Engine &source);
+		void currentJPEG_get(std::vector<uchar> &destination);
+		void currentJPEG_set(const std::vector<uchar> &source);
 		void signs_get(vector<sign_data> &destination);
 		void signs_set(vector<sign_data> &source);
 		bool getExitState();

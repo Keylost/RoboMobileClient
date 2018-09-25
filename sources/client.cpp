@@ -176,6 +176,9 @@ void client_fnc(System &syst,Client &client)
 				Object<Mat> *newObj = new Object<Mat>();
 				*(newObj->obj) = imdecode(b,1);
 				iqueue.push(newObj);
+				#if defined(RELAYING_MODE)
+				syst.currentJPEG_set(b);
+				#endif
 				b.clear();
 				break;
 			}

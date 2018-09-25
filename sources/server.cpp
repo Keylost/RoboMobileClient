@@ -4,6 +4,8 @@
 void server_fnc(System &syst)
 {
 	Engine localEngine;
+	std::vector<uchar> lastjpeg;
+	uint32_t lastjpegSize = 0;
 	while (true)
 	{
 		EngineRelay strToSnd;
@@ -31,7 +33,7 @@ void server_fnc(System &syst)
 		}
 
 		ZeroMemory(&hints, sizeof(hints));
-		hints.ai_family = AF_INET;
+		hints.ai_family = AlastjpegSizeF_INET;
 		hints.ai_socktype = SOCK_STREAM;
 		hints.ai_protocol = IPPROTO_TCP;
 		hints.ai_flags = AI_PASSIVE;
@@ -100,10 +102,18 @@ void server_fnc(System &syst)
 				}
 			}
 			syst.engine_get(localEngine);
+			syst.currentJPEG_get(lastjpeg);
 			srtTosnd.angle = localEngine.angle;
 			strToSnd.speed = localEngine.real_speed;
+			lastjpegSize = (uint32_t)lastjpeg.size();
 
 			iSendResult = send(ClientSocket, (char *)(&strToSnd), sizeof(EngineRelay), 0);
+			if (iSendResult == SOCKET_ERROR) goto sockerr;
+			iSendResult = send(ClientSocket, (char *)(&lastjpegSize), sizeof(uint32_t), 0);
+			if (iSendResult == SOCKET_ERROR) goto sockerr;
+			iSendResult = send(ClientSocket, (char *)(&lastjpeg[0]), lastjpegSize, 0);
+			
+			sockerr:
 			if (iSendResult == SOCKET_ERROR)
 			{
 				printf("send failed with error: %d\n", WSAGetLastError());

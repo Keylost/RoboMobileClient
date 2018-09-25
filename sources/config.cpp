@@ -57,3 +57,21 @@ bool System::getExitState()
 	exitState_mutex.unlock();
 	return state;
 }
+
+void System::currentJPEG_get(std::vector<uchar> &destination)
+{
+	destination.clear();
+	currentJPEG_mutex.lock();
+	destination = std::vector<uchar>(currentJPEG.size());
+	memcpy(&destination[0],&currentJPEG[0],currentJPEG.size());
+	currentJPEG_mutex.unlock();
+}
+
+void System::currentJPEG_set(const std::vector<uchar> &source)
+{
+	currentJPEG_mutex.lock();
+	currentJPEG.clear();
+	currentJPEG = std::vector<uchar>(source.size());
+	memcpy(&currentJPEG[0],&source[0],source.size());
+	currentJPEG_mutex.unlock();
+}
