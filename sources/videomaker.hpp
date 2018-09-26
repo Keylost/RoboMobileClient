@@ -14,7 +14,7 @@ private:
 	cv::VideoWriter output;
 	bool iscolor;
 public:	
-	bool init(System &syst,int width,int height);
+	bool init(const char* fileName,int width,int height, int codec);
 	void write(cv::Mat& frame);
 	void deinit();
 };

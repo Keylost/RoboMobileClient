@@ -36,6 +36,13 @@ System syst;
 int bordersize =100;
 char screenshot_name[16];
 VideoMaker video;
+VideoMaker demoRecorder;
+FILE *demoEngineDB;
+FILE *demoSignsDB;
+FILE *demoLineDB;
+line_data demoLine;
+vector<sign_data> demoSigns;
+Engine demoEngine;
 
 int power_val = 1;
 Client *client;
@@ -49,13 +56,59 @@ void Power_switcher(int pos, void *ptr);
 void init();
 void deinit();
 
+bool ENABLE_DEMORECORD = false;
+bool ENABLE_DEMOPLAY = true;
+
 int main(int argc, char *argv[])
-{
+{	
 	Object<cv::Mat> *curObj = NULL;
+	cv::Mat demoImgLink;
+	cv::VideoCapture demoVidCapture;
 	Queue<cv::Mat> &queue = syst.iqueue;
 	
 	CLP::parse(argc, argv, syst);
+
+	char demoFolderName[256];
+	strcpy(demoFolderName, "./demo2");
+	if(ENABLE_DEMOPLAY)
+	{
+		demoVidCapture.open(std::string(std::string(demoFolderName)+"/demo.avi").c_str());
+		if(!demoVidCapture.isOpened())
+		{
+			printf("Can not open demo video\n");
+			exit(0);
+		}
+		demoEngineDB = NULL;
+		demoSignsDB = NULL;
+		demoLineDB = NULL;
+		demoEngineDB = fopen(std::string(std::string(demoFolderName)+"/demoEngineDB.dat").c_str(), "rb");
+		demoSignsDB = fopen(std::string(std::string(demoFolderName)+"/demoSignsDB.dat").c_str(), "rb");
+		demoLineDB = fopen(std::string(std::string(demoFolderName)+"/demoLineDB.dat").c_str(), "rb");
+		if(!demoEngineDB || !demoSignsDB || !demoLineDB)
+		{
+			printf("Can not open DB files to play demo\n");
+			exit(0);
+		}
+		syst.capture_width = 640;
+		syst.capture_height = 480;
+	}
 	init();
+	if(ENABLE_DEMORECORD)
+	{
+		demoRecorder.init(std::string(std::string(demoFolderName)+"/demo.avi").c_str(),width,height, CV_FOURCC('M','J','P','G'));
+		demoEngineDB = NULL;
+		demoSignsDB = NULL;
+		demoLineDB = NULL;
+		demoEngineDB = fopen(std::string(std::string(demoFolderName)+"/demoEngineDB.dat").c_str(), "wb");
+		demoSignsDB = fopen(std::string(std::string(demoFolderName)+"/demoSignsDB.dat").c_str(), "wb");
+		demoLineDB = fopen(std::string(std::string(demoFolderName)+"/demoLineDB.dat").c_str(), "wb");
+		if(!demoEngineDB || !demoSignsDB || !demoLineDB)
+		{
+			printf("Can not open DB files to record demo\n");
+			exit(0);
+		}
+	}
+	
 	/*Создает поток приема данных от сервера*/
 	thread thr(client_fnc,ref(syst),ref(*client));
 	thr.detach();
@@ -65,15 +118,58 @@ int main(int argc, char *argv[])
 	thread relaying_thr(server_fnc,ref(syst));
 	relaying_thr.detach();
 	#endif
+	
 	//createTrackbar("Engine Power\n1-ON,0-OFF", "Telemetry", &power_val, 1, Power_switcher);
 	printf("Press u to take screenshot\n");
-	
 	while(true)
 	{
-		curObj = queue.waitForNewObject(curObj, 5000);
-		if(curObj == NULL) break; //завершить цикл по таймауту
-		
-		cv::Mat &img = *(curObj->obj);
+		if(!ENABLE_DEMOPLAY)
+		{
+			curObj = queue.waitForNewObject(curObj, 5000);
+			if(curObj == NULL) break; //завершить цикл по таймауту
+		}
+		else
+		{
+			printf("lo16!\n");
+			if(!demoVidCapture.grab())
+			{
+				printf("End1\n");
+				exit(0);
+			}
+			printf("lo166!\n");
+			cv::Mat hjk(480, 640, CV_8UC3);
+			demoVidCapture.retrieve(hjk,0);
+			//demoVidCapture >> ddfs;
+			printf("lo101!\n");
+			if(demoImgLink.empty())
+			{
+				printf("End of demo!\n");
+				exit(0);
+			}
+			printf("lo10!\n");
+			fread(&demoEngine, sizeof(Engine), 1, demoEngineDB);
+			fread(&demoLine, sizeof(line_data), 1, demoLineDB);
+			printf("lo11!\n");
+			uint8_t sgnssx = 0;
+			demoSigns.clear();
+			fread(&sgnssx, sizeof(uint8_t), 1, demoSignsDB);
+			demoSigns = vector<sign_data>(sgnssx);
+			fread(&demoSigns[0], sizeof(sign_data)*sgnssx, 1, demoSignsDB);
+			
+			vector<int> parameters; //вектор параметров сжатия изображения(jpeg 20%)
+			vector<uchar> bufferCompression; //вектор содержащий сжатое изображение
+			parameters = vector<int>(2);
+			parameters[0] = CV_IMWRITE_JPEG_QUALITY; //jpeg
+			parameters[1] = 80; //0-100 quality
+			imencode(".jpg", demoImgLink, bufferCompression, parameters);
+			syst.currentJPEG_set(bufferCompression);
+			syst.signs_set(demoSigns);
+			syst.engine_set(demoEngine);
+			syst.line_set(demoLine);
+			printf("lo2!\n");
+		}
+		printf("lo16!\n");
+		cv::Mat &img = ENABLE_DEMOPLAY?demoImgLink:*(curObj->obj);
 		
 		if(syst.clear_video)
 		{
@@ -137,6 +233,18 @@ void show_telemetry(cv::Mat &image)
 	syst.line_get(myline);
 	syst.signs_get(mysigns);
 	syst.engine_get(engine);
+	
+	if(ENABLE_DEMORECORD)
+	{
+		printf("lo16!\n");
+		demoRecorder.write(image);
+		printf("lo16!\n");
+		fwrite(&engine, sizeof(Engine), 1, demoEngineDB);
+		fwrite(&myline, sizeof(line_data), 1, demoLineDB);
+		uint8_t sgcnt = (uint8_t)mysigns.size();
+		fwrite(&sgcnt, sizeof(uint8_t), 1, demoSignsDB);
+		fwrite(&mysigns[0], sizeof(sign_data)*mysigns.size(), 1, demoSignsDB);
+	}
 	
 	uint8_t *panel_row;
 	for(int i=0;i<panel.rows;i++)
@@ -296,16 +404,19 @@ void Power_switcher(int pos, void *ptr)
 
 void init()
 {
-	client = new Client(syst);
-	
-	printf("[I]: Connecting to %s:%d...\n",syst.host, syst.portno);
-	
-	if(!client->connect())
+	if(!ENABLE_DEMOPLAY)
 	{
-		printf("[E]: Connection failed.\n");
-		error("Can't connect to server.");
+		client = new Client(syst);
+		
+		printf("[I]: Connecting to %s:%d...\n",syst.host, syst.portno);
+		
+		if(!client->connect())
+		{
+			printf("[E]: Connection failed.\n");
+			error("Can't connect to server.");
+		}
+		printf("Connection was successfully established!\n");
 	}
-	printf("Connection was successfully established!\n");	
 	
 	width = syst.capture_width;
 	height = syst.capture_height;
@@ -380,11 +491,11 @@ void init()
 		bool vid_init = false;
 		if(syst.clear_video)
 		{
-			vid_init = video.init(syst,width,height);
+			vid_init = video.init(syst.videoname,width,height, CV_FOURCC('M','J','P','G'));
 		}
 		else
 		{
-			vid_init = video.init(syst,width+bordersize,height);
+			vid_init = video.init(syst.videoname,width+bordersize,height, CV_FOURCC('M','J','P','G'));
 		}
 		if(vid_init)
 		{
