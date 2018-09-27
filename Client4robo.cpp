@@ -57,7 +57,7 @@ void init();
 void deinit();
 
 bool ENABLE_DEMORECORD = false;
-bool ENABLE_DEMOPLAY = true;
+bool ENABLE_DEMOPLAY = false;
 
 int main(int argc, char *argv[])
 {	
@@ -69,10 +69,11 @@ int main(int argc, char *argv[])
 	CLP::parse(argc, argv, syst);
 
 	char demoFolderName[256];
-	strcpy(demoFolderName, "./demo2");
+	strcpy(demoFolderName, "./demo3");
 	if(ENABLE_DEMOPLAY)
 	{
 		demoVidCapture.open(std::string(std::string(demoFolderName)+"/demo.avi").c_str());
+		//demoVidCapture.open("out.avi");
 		if(!demoVidCapture.isOpened())
 		{
 			printf("Can not open demo video\n");
@@ -109,9 +110,12 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	/*Создает поток приема данных от сервера*/
-	thread thr(client_fnc,ref(syst),ref(*client));
-	thr.detach();
+	if(!ENABLE_DEMOPLAY)
+	{
+		/*Создает поток приема данных от сервера*/
+		thread thr(client_fnc,ref(syst),ref(*client));
+		thr.detach();
+	}
 	
 	#if defined(RELAYING_MODE)
 	/*Создает поток передачи данных телеметрии третьей стороне*/
@@ -130,26 +134,14 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			printf("lo16!\n");
-			if(!demoVidCapture.grab())
-			{
-				printf("End1\n");
-				exit(0);
-			}
-			printf("lo166!\n");
-			cv::Mat hjk(480, 640, CV_8UC3);
-			demoVidCapture.retrieve(hjk,0);
-			//demoVidCapture >> ddfs;
-			printf("lo101!\n");
+			demoVidCapture >> demoImgLink;
 			if(demoImgLink.empty())
 			{
 				printf("End of demo!\n");
 				exit(0);
 			}
-			printf("lo10!\n");
 			fread(&demoEngine, sizeof(Engine), 1, demoEngineDB);
 			fread(&demoLine, sizeof(line_data), 1, demoLineDB);
-			printf("lo11!\n");
 			uint8_t sgnssx = 0;
 			demoSigns.clear();
 			fread(&sgnssx, sizeof(uint8_t), 1, demoSignsDB);
@@ -166,25 +158,20 @@ int main(int argc, char *argv[])
 			syst.signs_set(demoSigns);
 			syst.engine_set(demoEngine);
 			syst.line_set(demoLine);
-			printf("lo2!\n");
 		}
-		printf("lo16!\n");
 		cv::Mat &img = ENABLE_DEMOPLAY?demoImgLink:*(curObj->obj);
 		
 		if(syst.clear_video)
 		{
 			img.copyTo(img_clear);
 		}
-		
 		show_telemetry(img);
-		
 		if(syst.videomaker)
 		{
 			if(syst.clear_video) video.write(img_clear);
 			else video.write(window);
 		}
 		cv::imshow("Stream", window);
-		
 		int c = cv::waitKey(1);
 		if(c==27)
 		{
@@ -202,8 +189,10 @@ int main(int argc, char *argv[])
 				printf("[I]: screenshot cant't be saved. No access/No codecs\n");
 			}
 		}
-		
-		curObj->free();
+		if(!ENABLE_DEMOPLAY)
+		{
+			curObj->free();
+		}
 	}
 
 	deinit();
